@@ -21,16 +21,24 @@
 #include "itkBinaryErodeImageFilter.h"
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryThresholdImageFilter.h"
+#include "itkSmoothingRecursiveGaussianImageFilter.h"
+#include "itkCastImageFilter.h"
 
 int main(int argc, char* argv[])
 {
 
-if (argc < 3)
-{
-	std::cerr << "Missing command line arguments" <<  std::endl;
-	std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dcm_directory outputmask_dcm_directory" << std::endl;
-    return -1;
-}	
+    if (argc < 4)
+    {
+	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dcm_directory outputmask_dcm_directory [# threads]" << std::endl;
+        return -1;
+    }	
+
+    int num_threads;
+    if (argc == 5)
+        num_threads = atoi(argv[4]);
+    else
+        num_threads = 1;
+    std::cout << "Number of threads: " << num_threads << std::endl;
 
 	typedef signed short DCMPixelType;
     typedef itk::OrientedImage<DCMPixelType, 3> InputImageType;
@@ -56,24 +64,10 @@ if (argc < 3)
     }
     catch(itk::ExceptionObject & e)
     {  
-        std::cerr << "Excpetion caught during file reading." << std::endl;
+        std::cerr << "Exception caught during file reading." << std::endl;
         std::cerr << e << std::endl;
         return -1;
     }   
-
-    /*
-    // Initialize structuring element (DCM)
-    typedef itk::BinaryBallStructuringElement<DCMPixelType, 3> BBStructuringElementDCMType;
-    BBStructuringElementDCMType BBStructuringElementDCM;
-    BBStructuringElementDCM.SetRadius(10); // 3x3 neighborhood filter
-    BBStructuringElementDCM.CreateStructuringElement();
-    
-    //Run DICOM images through Grayscale Dilation Filter
-    typedef itk::GrayscaleDilateImageFilter<InputImageType, InputImageType, BBStructuringElementDCMType> GrayscaleDilateFilterType;
-    GrayscaleDilateFilterType::Pointer GrayscaleDilateFilter = GrayscaleDilateFilterType::New();
-    GrayscaleDilateFilter->SetKernel(BBStructuringElementDCM);
-    GrayscaleDilateFilter->SetInput(reader->GetOutput());
-    */
 
     // begin Otsu filter
     typedef unsigned char BinaryPixelType;
@@ -86,17 +80,25 @@ if (argc < 3)
     // Initialize structuring element (binary)
     typedef itk::BinaryBallStructuringElement<BinaryPixelType, 3> BBStructuringElementBinType;
     BBStructuringElementBinType BBStructuringElementBin;
-    BBStructuringElementBin.SetRadius(1); 
+    BBStructuringElementBin.SetRadius(10); 
     BBStructuringElementBin.CreateStructuringElement();
- 
+
+    // begin binary erosion filter
+    typedef itk::BinaryErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> ErodeFilterType;
+    ErodeFilterType::Pointer BinaryErodeFilter = ErodeFilterType::New();
+    BinaryErodeFilter->SetKernel(BBStructuringElementBin);
+    BinaryErodeFilter->SetErodeValue(255);
+    BinaryErodeFilter->SetInput(OtsuFilter->GetOutput());
+
     // begin binary dilation filter
+    BBStructuringElementBin.SetRadius(1);
     typedef itk::BinaryDilateImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> DilateFilterType;
-    // typedef itk::BinaryDilateImageFilter<InputImageType, InputImageType, BBStructuringElementType> DilateFilterType;
     DilateFilterType::Pointer BinaryDilateFilter = DilateFilterType::New();
     BinaryDilateFilter->SetKernel(BBStructuringElementBin);
-    BinaryDilateFilter->SetInput(OtsuFilter->GetOutput());
     BinaryDilateFilter->SetDilateValue(255);
+    BinaryDilateFilter->SetInput(BinaryErodeFilter->GetOutput());
 
+    /*
     Binary3DImageType::Pointer BDOutputImage = OtsuFilter->GetOutput();
     for(int i = 0; i < 1; i++)
     {
@@ -105,29 +107,38 @@ if (argc < 3)
         BDOutputImage = BinaryDilateFilter->GetOutput();
         BDOutputImage->DisconnectPipeline();
     }
+    */
 
-    BBStructuringElementBin.SetRadius(10); 
-    // begin binary erosion filter
-    typedef itk::BinaryErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> ErodeFilterType;
-    ErodeFilterType::Pointer BinaryErodeFilter = ErodeFilterType::New();
-    BinaryErodeFilter->SetErodeValue(255);
-    BinaryErodeFilter->SetKernel(BBStructuringElementBin);
-    BinaryErodeFilter->SetInput(BDOutputImage);
-
-    //Mask using output from Binary Dilate Filter
+    // Apply mask
     typedef itk::MaskNegatedImageFilter<InputImageType, Binary3DImageType, InputImageType> MaskFilterType;
     // typedef itk::MaskNegatedImageFilter<InputImageType, InputImageType, InputImageType> MaskFilterType;
     MaskFilterType::Pointer MaskFilter = MaskFilterType::New();
     MaskFilter->SetInput1(reader->GetOutput());
     //MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
-    MaskFilter->SetInput2(BinaryErodeFilter->GetOutput());
+    MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
+
+    /*
+    // Cast image to float pixel type
+    typedef itk::OrientedImage<float, 3> FloatImageType;
+    typedef itk::CastImageFilter<InputImageType, FloatImageType> DCMToFloatCastFilterType;
+    DCMToFloatCastFilterType::Pointer DCMToFloatCastFilter = DCMToFloatCastFilterType::New();
+    DCMToFloatCastFilter->SetInput(MaskFilter->GetOutput());
+    */
+
+    // Apply recursive Gaussian blur
+    typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, InputImageType> RGFilterType;
+    RGFilterType::Pointer RGFilter = RGFilterType::New();
+    RGFilter->SetNormalizeAcrossScale(false);
+    RGFilter->SetSigma(5);
+    RGFilter->SetNumberOfThreads(num_threads);
+    RGFilter->SetInput(MaskFilter->GetOutput());
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
     typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
     typedef itk::ImageSeriesWriter<InputImageType, OutputImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
-    writer->SetInput(MaskFilter->GetOutput());
+    writer->SetInput(RGFilter->GetOutput());
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
     itksys::SystemTools::MakeDirectory(outputDirectory);
@@ -152,7 +163,7 @@ if (argc < 3)
     typedef itk::OrientedImage<BinaryPixelType, 2> MaskOutputImageType;
     typedef itk::ImageSeriesWriter<Binary3DImageType, MaskOutputImageType> MaskWriterType;
     MaskWriterType::Pointer MaskWriter = MaskWriterType::New();
-    MaskWriter->SetInput(BinaryErodeFilter->GetOutput());
+    MaskWriter->SetInput(BinaryDilateFilter->GetOutput());
     MaskWriter->SetImageIO(dcmIO);
     const char * MaskOutputDirectory = argv[3];
     itksys::SystemTools::MakeDirectory(MaskOutputDirectory);
