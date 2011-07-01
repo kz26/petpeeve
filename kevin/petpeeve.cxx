@@ -23,6 +23,7 @@
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkSmoothingRecursiveGaussianImageFilter.h"
 #include "itkCastImageFilter.h"
+#include "itkHConvexImageFilter.h"
 
 int main(int argc, char* argv[])
 {
@@ -133,12 +134,19 @@ int main(int argc, char* argv[])
     RGFilter->SetNumberOfThreads(num_threads);
     RGFilter->SetInput(MaskFilter->GetOutput());
 
+    // Apply convex image filter
+    typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
+    ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
+    ConvexFilter->SetHeight(2000);
+    //ConvexFilter->FullyConnectedOn();
+    ConvexFilter->SetInput(RGFilter->GetOutput());
+
     // Write end result of pipeline
     // Set up FileSeriesWriter
     typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
     typedef itk::ImageSeriesWriter<InputImageType, OutputImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
-    writer->SetInput(RGFilter->GetOutput());
+    writer->SetInput(ConvexFilter->GetOutput());
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
     itksys::SystemTools::MakeDirectory(outputDirectory);
