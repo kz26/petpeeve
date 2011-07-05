@@ -41,7 +41,7 @@ for f in files:
 print ""
 
 plt.figure()
-n1, bins1, patches1 = plt.hist(lesion_pixvals, bins=10, facecolor='green')
+n1, bins1, patches1 = plt.hist(lesion_pixvals, bins=10, facecolor='green', normed=True)
 plt.xlabel("Pixel intensity")
 plt.ylabel("# of pixels")
 plt.title("Lesion")
@@ -55,7 +55,7 @@ print "Lesion - median: %s" % (median(lesion_pixvals))
 print ""
 
 plt.figure()
-n1, bins1, patches1 = plt.hist(normal_pixvals, bins=10, range=[0,max(lesion_pixvals)])
+n1, bins1, patches1 = plt.hist(normal_pixvals, bins=10, range=[0,max(lesion_pixvals)], normed=True)
 plt.xlabel("Pixel intensity")
 plt.ylabel("# of pixels")
 plt.title("Normal")
