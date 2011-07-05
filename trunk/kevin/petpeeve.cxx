@@ -24,6 +24,7 @@
 #include "itkSmoothingRecursiveGaussianImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkHConvexImageFilter.h"
+#include "itkRescaleIntensityImageFilter.h"
 
 int main(int argc, char* argv[])
 {
@@ -39,6 +40,7 @@ int main(int argc, char* argv[])
         num_threads = atoi(argv[4]);
     else
         num_threads = 1;
+    //std::cout << "Number of args: " << argc << std::endl;
     std::cout << "Number of threads: " << num_threads << std::endl;
 
 	typedef signed short DCMPixelType;
@@ -118,14 +120,6 @@ int main(int argc, char* argv[])
     //MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
     MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
 
-    /*
-    // Cast image to float pixel type
-    typedef itk::OrientedImage<float, 3> FloatImageType;
-    typedef itk::CastImageFilter<InputImageType, FloatImageType> DCMToFloatCastFilterType;
-    DCMToFloatCastFilterType::Pointer DCMToFloatCastFilter = DCMToFloatCastFilterType::New();
-    DCMToFloatCastFilter->SetInput(MaskFilter->GetOutput());
-    */
-
     // Apply recursive Gaussian blur
     typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, InputImageType> RGFilterType;
     RGFilterType::Pointer RGFilter = RGFilterType::New();
@@ -137,16 +131,42 @@ int main(int argc, char* argv[])
     // Apply convex image filter
     typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
     ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(2000);
+    ConvexFilter->SetHeight(100);
+    ConvexFilter->SetNumberOfThreads(num_threads);
     //ConvexFilter->FullyConnectedOn();
     ConvexFilter->SetInput(RGFilter->GetOutput());
+
+    
+    // Rescale image intensity 
+    typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescaleIntensityFilterType;
+    RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
+    RescaleIntensityFilter->SetOutputMinimum(0);
+    RescaleIntensityFilter->SetOutputMaximum(255);
+    RescaleIntensityFilter->SetNumberOfThreads(num_threads);
+    RescaleIntensityFilter->SetInput(ConvexFilter->GetOutput());
+    
+    // Cast image to unsigned pixel type
+    typedef itk::CastImageFilter<InputImageType, Binary3DImageType> DCMToBinaryCastFilterType;
+    DCMToBinaryCastFilterType::Pointer DCMToBinaryCastFilter = DCMToBinaryCastFilterType::New();
+    DCMToBinaryCastFilter->SetInput(RescaleIntensityFilter->GetOutput());
+
+    // Apply threshold filter
+    typedef itk::ThresholdImageFilter<Binary3DImageType> BinaryThresholdFilterType;
+    BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
+    BinaryThresholdFilter->SetOutsideValue(0);
+    BinaryThresholdFilter->ThresholdBelow(249);
+    BinaryThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
+    BinaryThresholdFilter->SetNumberOfThreads(num_threads);
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
     typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
-    typedef itk::ImageSeriesWriter<InputImageType, OutputImageType> WriterType;
+    typedef itk::OrientedImage<BinaryPixelType, 2> BinaryOutputImageType;
+    typedef itk::ImageSeriesWriter<Binary3DImageType, BinaryOutputImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
-    writer->SetInput(ConvexFilter->GetOutput());
+    // CHANGE INPUT TO LAST FILTER USED
+    writer->SetInput(BinaryThresholdFilter->GetOutput());
+    //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
     itksys::SystemTools::MakeDirectory(outputDirectory);
