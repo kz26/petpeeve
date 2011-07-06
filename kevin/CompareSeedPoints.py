@@ -16,6 +16,9 @@ f1data = np.genfromtxt(sys.argv[1])
 f2data = np.genfromtxt(sys.argv[2])
 threshold = int(sys.argv[3]) 
 
+counter = np.zeros(f1data.shape[0])
+cindex = 0
+
 for row1 in f1data:
     print row1
     for row2 in f2data:
@@ -23,3 +26,8 @@ for row1 in f1data:
         if abs(np.min(diff)) <= threshold and abs(np.max(diff)) <= threshold:
             print "    ",
             print row2
+            counter[cindex] = 1
+    cindex += 1
+
+sens = (float(counter.sum()) / len(counter)) * 100
+print "Sensitivity: %s %" % (sens)
