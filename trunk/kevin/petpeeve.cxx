@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
     typedef itk::ThresholdImageFilter<Binary3DImageType> BinaryThresholdFilterType;
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
     BinaryThresholdFilter->SetOutsideValue(0);
-    BinaryThresholdFilter->ThresholdBelow(249);
+    BinaryThresholdFilter->ThresholdBelow(128);
     BinaryThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
     BinaryThresholdFilter->SetNumberOfThreads(num_threads);
 
