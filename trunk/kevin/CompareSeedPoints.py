@@ -19,6 +19,13 @@ threshold = int(sys.argv[3])
 counter = np.zeros(f1data.shape[0])
 cindex = 0
 
+# Treat 1D arrays as iterable 2D arrays
+if len(f1data.shape) == 1:
+    f1data = [f1data]
+    counter = np.zeros(1)
+if len(f2data.shape) == 1:
+    f2data = [f2data]
+
 for row1 in f1data:
     print row1
     for row2 in f2data:
@@ -30,4 +37,4 @@ for row1 in f1data:
     cindex += 1
 
 sens = (float(counter.sum()) / len(counter)) * 100
-print "Sensitivity: %s %" % (sens)
+print "Sensitivity: %s %%" % (sens)

@@ -5,14 +5,16 @@
 import sys
 import numpy as np
 import scipy as sp
+from scipy.cluster.vq import whiten, kmeans2
 
 if len(sys.argv) != 2:
     print "Usage: %s input_data_file" % (sys.argv[0])
     sys.exit(-1)
 
 data = np.genfromtxt(sys.argv[1])
-data = sp.cluster.vq.whiten(data)
+#data = whiten(data)
 
-clusters = sp.cluster.vq.kmeans(data, 10)
+clusters = kmeans2(data, 10, 100)
 
 print clusters[0]
+
