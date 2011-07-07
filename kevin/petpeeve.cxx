@@ -150,6 +150,7 @@ int main(int argc, char* argv[])
     DCMToBinaryCastFilterType::Pointer DCMToBinaryCastFilter = DCMToBinaryCastFilterType::New();
     DCMToBinaryCastFilter->SetInput(RescaleIntensityFilter->GetOutput());
 
+    /*
     // Apply threshold filter
     typedef itk::ThresholdImageFilter<Binary3DImageType> BinaryThresholdFilterType;
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
@@ -157,6 +158,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->ThresholdBelow(128);
     BinaryThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
     BinaryThresholdFilter->SetNumberOfThreads(num_threads);
+    */
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
@@ -165,7 +167,7 @@ int main(int argc, char* argv[])
     typedef itk::ImageSeriesWriter<Binary3DImageType, BinaryOutputImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
     // CHANGE INPUT TO LAST FILTER USED
-    writer->SetInput(BinaryThresholdFilter->GetOutput());
+    writer->SetInput(DCMToBinaryCastFilter->GetOutput());
     //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];

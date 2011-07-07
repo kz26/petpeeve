@@ -40,13 +40,13 @@ for case in os.listdir(sys.argv[1]):
         f.write("#$ -cwd\n")
         f.write("/home/zhangk/bin/petpeeve %s %s %s %s\n" % (os.path.join(subcasepath, "PT"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_mask"), "1"))
         f.write("/home/zhangk/bin/findpoints.py %s > %s\n" % (os.path.join(outputpath, "output"), os.path.join(outputpath, "found_points.txt")))
-        f.write("/home/zhangk/bin/PointsInTumor.py %s %s > %s\n" % (os.path.join(outputpath, "output/found_points.txt"), os.path.join(outputpath, "output_mask"), os.path.join(outputpath, "points_in_tumor.txt")))
-        f.write("/home/zhangk/bin/CompareSeedPoints.py %s %s %s > %s\n" % (os.path.join(outputpath, "output/seeds-fixed.txt"), os.path.join(outputpath, "output/found_points.txt"), "5", os.path.join(outputpath, "output/seed_compare.txt")))
+        f.write("/home/zhangk/bin/PointsInTumor.py %s %s > %s\n" % (os.path.join(outputpath, "found_points.txt"), os.path.join(subcasepath, "PT_manual_contours_bin"), os.path.join(outputpath, "points_in_tumor.txt")))
+        f.write("/home/zhangk/bin/CompareSeedPoints.py %s %s %s > %s\n" % (os.path.join(subcasepath, "seeds-fixed.txt"), os.path.join(outputpath, "found_points.txt"), "5", os.path.join(outputpath, "seed_compare.txt")))
         f.close()
 
 mf = open(sys.argv[4], 'w')
 mf.write("#!/bin/bash\n")
 for s in scriptlist:
-    mf.write("qsub %s\n" % (os.path.abspath(os.path.join(sys.argv[3], scriptfn))))
+    mf.write("qsub %s\n" % (os.path.abspath(os.path.join(sys.argv[3], s))))
 mf.close()
 
