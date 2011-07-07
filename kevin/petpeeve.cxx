@@ -17,7 +17,7 @@
 #include "itkThresholdImageFilter.h"
 #include "itkOtsuMultipleThresholdsImageFilter.h"
 #include "itkBinaryDilateImageFilter.h"
-#include "itkGrayscaleDilateImageFilter.h"
+#include "itkGrayscaleErodeImageFilter.h"
 #include "itkBinaryErodeImageFilter.h"
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryThresholdImageFilter.h"
@@ -25,6 +25,8 @@
 #include "itkCastImageFilter.h"
 #include "itkHConvexImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
+//#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkRegionalMaximaImageFilter.h"
+//#include "itkScalarImageKmeansImageFilter.h"
 
 int main(int argc, char* argv[])
 {
@@ -128,15 +130,29 @@ int main(int argc, char* argv[])
     RGFilter->SetNumberOfThreads(num_threads);
     RGFilter->SetInput(MaskFilter->GetOutput());
 
+    // Apply threshold filter
+    typedef itk::ThresholdImageFilter<InputImageType> ThresholdFilterType;
+    ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
+    ThresholdFilter->SetOutsideValue(0);
+    ThresholdFilter->ThresholdBelow(10000);
+    ThresholdFilter->SetInput(RGFilter->GetOutput());
+    ThresholdFilter->SetNumberOfThreads(num_threads);
+
     // Apply convex image filter
     typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
     ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(100);
+    ConvexFilter->SetHeight(2000);
     ConvexFilter->SetNumberOfThreads(num_threads);
     //ConvexFilter->FullyConnectedOn();
-    ConvexFilter->SetInput(RGFilter->GetOutput());
+    ConvexFilter->SetInput(ThresholdFilter->GetOutput());
 
-    
+    /*
+    typedef itk::RegionalMaximaImageFilter<InputImageType, InputImageType> RMaxFilterType;
+    RMaxFilterType::Pointer RMaxFilter = RMaxFilterType::New();
+    RMaxFilter->FlatIsMaximaOff();
+    RMaxFilter->SetInput(RGFilter->GetOutput());
+    */
+
     // Rescale image intensity 
     typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescaleIntensityFilterType;
     RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
@@ -151,6 +167,15 @@ int main(int argc, char* argv[])
     DCMToBinaryCastFilter->SetInput(RescaleIntensityFilter->GetOutput());
 
     /*
+    // Erode more
+    typedef itk::GrayscaleErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> GrayscaleErodeFilterType;
+    GrayscaleErodeFilterType::Pointer GrayscaleErodeFilter = GrayscaleErodeFilterType::New();
+    GrayscaleErodeFilter->SetKernel(BBStructuringElementBin);
+    //GrayscaleErodeFilter->SetErodeValue(255);
+    GrayscaleErodeFilter->SetNumberOfThreads(num_threads);
+    GrayscaleErodeFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
+    */
+
     // Apply threshold filter
     typedef itk::ThresholdImageFilter<Binary3DImageType> BinaryThresholdFilterType;
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
@@ -158,6 +183,17 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->ThresholdBelow(128);
     BinaryThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
     BinaryThresholdFilter->SetNumberOfThreads(num_threads);
+
+    /*
+    // Apply K-means intensity filter
+    typedef itk::ScalarImageKmeansImageFilter<Binary3DImageType> KmeansFilterType;
+    KmeansFilterType::Pointer KmeansFilter = KmeansFilterType::New();
+    KmeansFilter->SetUseNonContiguousLabels(true);
+    KmeansFilter->AddClassWithInitialMean(0);
+    KmeansFilter->AddClassWithInitialMean(64);
+    KmeansFilter->AddClassWithInitialMean(128);
+    KmeansFilter->AddClassWithInitialMean(192);
+    KmeansFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
     */
 
     // Write end result of pipeline
@@ -167,7 +203,7 @@ int main(int argc, char* argv[])
     typedef itk::ImageSeriesWriter<Binary3DImageType, BinaryOutputImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
     // CHANGE INPUT TO LAST FILTER USED
-    writer->SetInput(DCMToBinaryCastFilter->GetOutput());
+    writer->SetInput(BinaryThresholdFilter->GetOutput());
     //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
