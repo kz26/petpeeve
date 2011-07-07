@@ -7,6 +7,7 @@
 // A multisclae object recognition approach is then implemented using a series of Gaussian
 // smoothing filters with different sigma values.
 
+#include "itkMinimumMaximumImageCalculator.h"
 #include "itkOrientedImage.h"
 #include "itkGDCMImageIO.h"
 #include "itkGDCMSeriesFileNames.h"
@@ -29,6 +30,9 @@
 #include "itkDerivativeImageFilter.h"
 #include "itkZeroCrossingBasedEdgeDetectionImageFilter.h"
 #include "itkHConvexImageFilter.h"
+#include "itkResampleImageFilter.h"
+#include "itkIdentityTransform.h"
+#include "itkLinearInterpolateImageFunction.h"
 int main(int argc, char* argv[])
 {
 
@@ -38,8 +42,11 @@ if (argc < 3)
 	std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dcm_directory outputmask_dcm_directory" << std::endl;
     return -1;
 }	
-
-	typedef signed short DCMPixelType;
+    typedef unsigned char InputPixelType;               //changed this!!!
+	typedef itk::OrientedImage<InputPixelType, 3> TestInputImageType;
+    
+    
+    typedef signed short DCMPixelType;
     typedef itk::OrientedImage<DCMPixelType, 3> InputImageType;
     typedef itk::ImageSeriesReader<InputImageType> ReaderType;
     ReaderType::Pointer reader = ReaderType::New();
@@ -66,6 +73,7 @@ if (argc < 3)
         std::cerr << e << std::endl;
         return -1;
     }   
+
 
     // begin Otsu filter
     typedef unsigned char BinaryPixelType;
@@ -109,18 +117,78 @@ if (argc < 3)
     typedef itk::MaskNegatedImageFilter<InputImageType, Binary3DImageType, InputImageType> MaskFilterType;
     MaskFilterType::Pointer MaskFilter = MaskFilterType::New();
     MaskFilter->SetInput1(reader->GetOutput());
-    MaskFilter->SetInput2(BinaryErodeFilter->GetOutput());
- 
+    MaskFilter->SetInput2(BinaryErodeFilter->GetOutput()); 
     //MultiScale Object Recognition
-    //Multiple Smoothing Recursive Gaussian Filter on Output from Mask Filter
-    typedef itk::OrientedImage<DCMPixelType, 3> GaussianImageType;
-    typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, GaussianImageType> GaussianFilterType;
-    GaussianFilterType::Pointer GaussianFilter = GaussianFilterType::New();
 
+    //Multiple Smoothing Recursive Gaussian Filter on Output from Mask Filter
+    //Want to follow process of filtering then subsampling
+
+    typedef float GaussianPixelType;
+    typedef itk::OrientedImage<GaussianPixelType, 3> GaussianImageType;
+
+    typedef itk::CastImageFilter<InputImageType, GaussianImageType> FloatCastFilterType;     //Cast to convert to float pixel type
+    FloatCastFilterType::Pointer FloatCastFilter = FloatCastFilterType::New();
+    FloatCastFilter->SetInput(MaskFilter->GetOutput());
+
+    typedef itk::SmoothingRecursiveGaussianImageFilter<GaussianImageType, GaussianImageType> GaussianFilterType;    //Smoothing Gaussian Filter
+    GaussianFilterType::Pointer GaussianFilter = GaussianFilterType::New();
     GaussianFilter->SetNormalizeAcrossScale(false);
-    GaussianFilter->SetInput(MaskFilter->GetOutput());
+    GaussianFilter->SetInput(FloatCastFilter->GetOutput());
     GaussianFilter->SetSigma(10);
+
+    //Apply the resampling filter
+    typedef itk::MinimumMaximumImageCalculator <InputImageType> ImageCalculatorFilterType;      //Compute the maximum and minimum pixel intensity values for the input images
+    ImageCalculatorFilterType::Pointer imageCalculatorFilter = ImageCalculatorFilterType::New ();
+    imageCalculatorFilter->SetImage(reader->GetOutput());
+    signed short min =  imageCalculatorFilter->GetMinimum();
+    signed short max =  imageCalculatorFilter->GetMaximum();
+    std::cout<<"min "<<min<<std::endl;
+    std::cout<<"max "<<max<<std::endl;
+
+    typedef float InternalPixelType;
+    typedef unsigned char ResamplePixelType;
+    const double factorX=1;                         //Use max and min values from reader to rescale image to orginal size
+    const double factorY=1;
+    const double factorZ=1;                         //Z direction always equals 1
+
+
+    typedef itk::OrientedImage<InternalPixelType, 3> InternalImageType;
+    typedef itk::OrientedImage<ResamplePixelType, 3> ResampleImageType;
+
+    typedef itk::ResampleImageFilter<GaussianImageType, ResampleImageType> ResampleFilterType;
+    ResampleFilterType::Pointer ResampleFilter = ResampleFilterType::New();
     
+    typedef itk::IdentityTransform<double, 3> TransformType;    //Only transform on image should be rescaling
+    TransformType::Pointer Transformer=TransformType::New();
+    Transformer->SetIdentity();
+    ResampleFilter->SetTransform(Transformer);
+
+    typedef itk::LinearInterpolateImageFunction<InternalImageType, double>InterpolatorType;          //Specify interpolation algorithm
+    InterpolatorType::Pointer Interpolator=InterpolatorType::New();
+    ResampleFilter->SetInterpolator(Interpolator);
+
+    ResampleImageType::SpacingType spacing;     //Specify spacing for output image
+    const InputImageType::SpacingType& inputSpacing = reader->GetOutput()->GetSpacing();
+    spacing[0]=inputSpacing[0]*factorX;
+    spacing[1]=inputSpacing[1]*factorY;
+    spacing[2]=inputSpacing[2]*factorZ;
+    
+    ResampleFilter->SetOutputSpacing(spacing);
+
+    ResampleFilter->SetOutputOrigin(reader->GetOutput()->GetOrigin());
+    InputImageType::SizeType inputSize = reader->GetOutput()->GetLargestPossibleRegion().GetSize();
+    typedef InputImageType::SizeType::SizeValueType SizeValueType;
+
+    InputImageType::SizeType size;
+
+    size[0] = static_cast<SizeValueType>(inputSize[0]/factorX);
+    size[1] = static_cast<SizeValueType>(inputSize[1]/factorY);
+    size[2] = static_cast<SizeValueType>(inputSize[2]/factorZ);
+
+    ResampleFilter->SetSize(size);
+    ResampleFilter->SetInput(GaussianFilter->GetOutput());
+
+
     //Apply convex image filter
     typedef itk::HConvexImageFilter<GaussianImageType, GaussianImageType> ConvexImageFilterType;
     ConvexImageFilterType::Pointer ConvexImageFilter= ConvexImageFilterType::New();
@@ -147,23 +215,7 @@ if (argc < 3)
     BinaryThresholdFilter->ThresholdBelow(249);
     BinaryThresholdFilter->SetInput(DCMToBinaryCast3D->GetOutput());
 
-/* 
- // Commented out this code region to try a different method
-    typedef itk::SmoothingRecursiveGaussianImageFilter<GaussianImageType, GaussianImageType> GaussianFilterType2;
-    GaussianFilterType2::Pointer GaussianFilter2 = GaussianFilterType2::New();
-
-    GaussianFilter2->SetNormalizeAcrossScale(false);
-    GaussianFilter2->SetInput(GaussianFilter->GetOutput());
-    GaussianFilter2->SetSigma(10);
-
-    typedef itk::SmoothingRecursiveGaussianImageFilter<GaussianImageType, GaussianImageType> GaussianFilterType3;
-    GaussianFilterType3::Pointer GaussianFilter3=GaussianFilterType3::New();
-
-    GaussianFilter3->SetNormalizeAcrossScale(false);
-    GaussianFilter3->SetInput(GaussianFilter2->GetOutput());
-    GaussianFilter3->SetSigma(5);
-
-
+/*
     //ERROR IN ATTEMPT TO IMPLEMENT: The number of filenames passed is 355 but 1 were expected
     //Implement Canny Edge Detection as edge localization method
     //Output should be a binary image
@@ -230,13 +282,29 @@ if (argc < 3)
     RescaleFilter->SetOutputMinimum(0);
     RescaleFilter->SetOutputMaximum(255);
 */
-    
+   //
+   //
+   // cast ResampleImage to outputImage
+
+
+    typedef itk::OrientedImage<DCMPixelType, 3> OutputImageType3D;
+    typedef itk::CastImageFilter<ResampleImageType, OutputImageType3D> OutputCastFilterType;
+  OutputCastFilterType::Pointer OutputCastFilter = OutputCastFilterType::New();
+    OutputCastFilter->SetInput(ResampleFilter->GetOutput());
+OutputCastFilter->Update();
+    std::cout<<"cast good\n";
+
     // Write end result of pipeline
     // Set up FileSeriesWriter
+   // typedef itk::OrientedImage<DCMPixelType, 3> OutputImageType;
+   // typedef itk::OrientedImage<ResamplePixelType, 2> OutputImageType;
+    //typedef itk::ImageSeriesWriter<Binary3DImageType, OutputImageType> WriterType;
     typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
-    typedef itk::ImageSeriesWriter<Binary3DImageType, OutputImageType> WriterType;
+    typedef itk::ImageSeriesWriter<OutputImageType3D, OutputImageType> WriterType;
+    //typedef itk::ImageSeriesWriter<ResampleImageType, OutputImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
-    writer->SetInput(BinaryThresholdFilter->GetOutput());
+    //writer->SetInput(GaussianFilter->GetOutput());
+    //writer->SetInput(ResampleFilter->GetOutput());
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
     itksys::SystemTools::MakeDirectory(outputDirectory);
@@ -244,6 +312,7 @@ if (argc < 3)
     writer->SetFileNames(nameGenerator->GetOutputFileNames());
     writer->SetMetaDataDictionaryArray(reader->GetMetaDataDictionaryArray());
 
+    writer->SetInput(OutputCastFilter->GetOutput());
     try
     {
 	    writer->Update();
@@ -256,7 +325,7 @@ if (argc < 3)
     }
     std::cout << "Files successfully written." << std::endl;
 
-   
+  /* 
     // Write binary mask files
     // Set up FileSeriesWriter for masks
     typedef itk::OrientedImage<BinaryPixelType, 2> MaskOutputImageType;
@@ -281,7 +350,7 @@ if (argc < 3)
         return -1;
     }
     std::cout << "Mask files successfully written." << std::endl;
-
+*/
     return 0;
   
 }
