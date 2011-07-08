@@ -5,28 +5,8 @@
 // The binary image output from the Otsu Filter is then used as a mask over the original image
 // to complete body segmentation.
 
-#include "itkOrientedImage.h"
-#include "itkGDCMImageIO.h"
-#include "itkGDCMSeriesFileNames.h"
-#include "itkImageSeriesReader.h"
-#include "itkImageSeriesWriter.h"
-#include "itkOtsuThresholdImageFilter.h"
-#include "itkImage.h"
-#include "itkImageFileReader.h"
-#include "itkMaskNegatedImageFilter.h"
-#include "itkThresholdImageFilter.h"
-#include "itkOtsuMultipleThresholdsImageFilter.h"
-#include "itkBinaryDilateImageFilter.h"
-#include "itkGrayscaleErodeImageFilter.h"
-#include "itkBinaryErodeImageFilter.h"
-#include "itkBinaryBallStructuringElement.h"
-#include "itkBinaryThresholdImageFilter.h"
-#include "itkSmoothingRecursiveGaussianImageFilter.h"
-#include "itkCastImageFilter.h"
-#include "itkHConvexImageFilter.h"
-#include "itkRescaleIntensityImageFilter.h"
-//#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkRegionalMaximaImageFilter.h"
-//#include "itkScalarImageKmeansImageFilter.h"
+#include "itktypes.h"
+#include "ext_functions.h"
 
 int main(int argc, char* argv[])
 {
@@ -45,21 +25,15 @@ int main(int argc, char* argv[])
     //std::cout << "Number of args: " << argc << std::endl;
     std::cout << "Number of threads: " << num_threads << std::endl;
 
-	typedef signed short DCMPixelType;
-    typedef itk::OrientedImage<DCMPixelType, 3> InputImageType;
-    typedef itk::ImageSeriesReader<InputImageType> ReaderType;
     ReaderType::Pointer reader = ReaderType::New();
 
-    typedef itk::GDCMImageIO ImageIOType;
     ImageIOType::Pointer dcmIO = ImageIOType::New();
     reader->SetImageIO(dcmIO);
-    typedef itk::GDCMSeriesFileNames NamesGeneratorType;
 
     NamesGeneratorType::Pointer nameGenerator = NamesGeneratorType::New();
     //nameGenerator->SetUseSeriesDetails(true);
     nameGenerator->SetDirectory(argv[1]);
 
-    typedef std::vector<std::string> FileNamesContainer;
     FileNamesContainer fileNames;
     fileNames = nameGenerator->GetInputFileNames();
     reader->SetFileNames(fileNames);
@@ -75,21 +49,15 @@ int main(int argc, char* argv[])
     }   
 
     // begin Otsu filter
-    typedef unsigned char BinaryPixelType;
-    typedef itk::OrientedImage<BinaryPixelType, 3> Binary3DImageType;
-    typedef itk::OtsuThresholdImageFilter<InputImageType, Binary3DImageType> OtsuFilterType;
-    // typedef itk::OtsuThresholdImageFilter<InputImageType, InputImageType> OtsuFilterType;
     OtsuFilterType::Pointer OtsuFilter = OtsuFilterType::New();
     OtsuFilter->SetInput(reader->GetOutput());
 
     // Initialize structuring element (binary)
-    typedef itk::BinaryBallStructuringElement<BinaryPixelType, 3> BBStructuringElementBinType;
     BBStructuringElementBinType BBStructuringElementBin;
     BBStructuringElementBin.SetRadius(10); 
     BBStructuringElementBin.CreateStructuringElement();
 
     // begin binary erosion filter
-    typedef itk::BinaryErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> ErodeFilterType;
     ErodeFilterType::Pointer BinaryErodeFilter = ErodeFilterType::New();
     BinaryErodeFilter->SetKernel(BBStructuringElementBin);
     BinaryErodeFilter->SetErodeValue(255);
@@ -97,7 +65,6 @@ int main(int argc, char* argv[])
 
     // begin binary dilation filter
     BBStructuringElementBin.SetRadius(1);
-    typedef itk::BinaryDilateImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> DilateFilterType;
     DilateFilterType::Pointer BinaryDilateFilter = DilateFilterType::New();
     BinaryDilateFilter->SetKernel(BBStructuringElementBin);
     BinaryDilateFilter->SetDilateValue(255);
@@ -115,92 +82,90 @@ int main(int argc, char* argv[])
     */
 
     // Apply mask
-    typedef itk::MaskNegatedImageFilter<InputImageType, Binary3DImageType, InputImageType> MaskFilterType;
-    // typedef itk::MaskNegatedImageFilter<InputImageType, InputImageType, InputImageType> MaskFilterType;
     MaskFilterType::Pointer MaskFilter = MaskFilterType::New();
     MaskFilter->SetInput1(reader->GetOutput());
     //MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
     MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
 
     // Apply recursive Gaussian blur
-    typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, InputImageType> RGFilterType;
     RGFilterType::Pointer RGFilter = RGFilterType::New();
     RGFilter->SetNormalizeAcrossScale(false);
     RGFilter->SetSigma(5);
     RGFilter->SetNumberOfThreads(num_threads);
     RGFilter->SetInput(MaskFilter->GetOutput());
 
+    /*
     // Apply threshold filter
-    typedef itk::ThresholdImageFilter<InputImageType> ThresholdFilterType;
     ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
     ThresholdFilter->SetOutsideValue(0);
     ThresholdFilter->ThresholdBelow(10000);
     ThresholdFilter->SetInput(RGFilter->GetOutput());
     ThresholdFilter->SetNumberOfThreads(num_threads);
-
-    // Apply convex image filter
-    typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
-    ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(2000);
-    ConvexFilter->SetNumberOfThreads(num_threads);
-    //ConvexFilter->FullyConnectedOn();
-    ConvexFilter->SetInput(ThresholdFilter->GetOutput());
-
-    /*
-    typedef itk::RegionalMaximaImageFilter<InputImageType, InputImageType> RMaxFilterType;
-    RMaxFilterType::Pointer RMaxFilter = RMaxFilterType::New();
-    RMaxFilter->FlatIsMaximaOff();
-    RMaxFilter->SetInput(RGFilter->GetOutput());
     */
 
-    // Rescale image intensity 
-    typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescaleIntensityFilterType;
+    // Apply convex image filter
+    ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
+    ConvexFilter->SetHeight(700);
+    ConvexFilter->SetNumberOfThreads(num_threads);
+    //ConvexFilter->FullyConnectedOn();
+    ConvexFilter->SetInput(RGFilter->GetOutput());
+
+    // Rescale image intensity
     RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
     RescaleIntensityFilter->SetOutputMinimum(0);
     RescaleIntensityFilter->SetOutputMaximum(255);
     RescaleIntensityFilter->SetNumberOfThreads(num_threads);
     RescaleIntensityFilter->SetInput(ConvexFilter->GetOutput());
-    
+
     // Cast image to unsigned pixel type
-    typedef itk::CastImageFilter<InputImageType, Binary3DImageType> DCMToBinaryCastFilterType;
     DCMToBinaryCastFilterType::Pointer DCMToBinaryCastFilter = DCMToBinaryCastFilterType::New();
     DCMToBinaryCastFilter->SetInput(RescaleIntensityFilter->GetOutput());
 
-    /*
-    // Erode more
-    typedef itk::GrayscaleErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> GrayscaleErodeFilterType;
-    GrayscaleErodeFilterType::Pointer GrayscaleErodeFilter = GrayscaleErodeFilterType::New();
-    GrayscaleErodeFilter->SetKernel(BBStructuringElementBin);
-    //GrayscaleErodeFilter->SetErodeValue(255);
-    GrayscaleErodeFilter->SetNumberOfThreads(num_threads);
-    GrayscaleErodeFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
-    */
-
     // Apply threshold filter
-    typedef itk::ThresholdImageFilter<Binary3DImageType> BinaryThresholdFilterType;
+    ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
+    ThresholdFilter->SetOutsideValue(0);
+    ThresholdFilter->ThresholdBelow(128);
+    ThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
+    ThresholdFilter->SetNumberOfThreads(num_threads);
+
+    // Apply binary threshold filter
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
+    BinaryThresholdFilter->SetInsideValue(255);
     BinaryThresholdFilter->SetOutsideValue(0);
-    BinaryThresholdFilter->ThresholdBelow(128);
-    BinaryThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
-    BinaryThresholdFilter->SetNumberOfThreads(num_threads);
+    BinaryThresholdFilter->SetLowerThreshold(1);
+    BinaryThresholdFilter->SetUpperThreshold(255);
+    BinaryThresholdFilter->SetInput(ThresholdFilter->GetOutput());
+
+    // Connected component filter
+    CCFilterType::Pointer CCFilter = CCFilterType::New();
+    CCFilter->SetNumberOfThreads(num_threads);
+    CCFilter->SetInput(BinaryThresholdFilter->GetOutput());
+    CCFilter->SetMaskImage(BinaryThresholdFilter->GetOutput());
+    CCFilter->FullyConnectedOn();
+
+    // Relabel component filter
+    RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
+    RelabelFilter->SetInput(CCFilter->GetOutput());
+    RelabelFilter->SetNumberOfThreads(num_threads);
+    RelabelFilter->SetMinimumObjectSize(2);
+
+    RelabelFilter->Update();
 
     /*
-    // Apply K-means intensity filter
-    typedef itk::ScalarImageKmeansImageFilter<Binary3DImageType> KmeansFilterType;
-    KmeansFilterType::Pointer KmeansFilter = KmeansFilterType::New();
-    KmeansFilter->SetUseNonContiguousLabels(true);
-    KmeansFilter->AddClassWithInitialMean(0);
-    KmeansFilter->AddClassWithInitialMean(64);
-    KmeansFilter->AddClassWithInitialMean(128);
-    KmeansFilter->AddClassWithInitialMean(192);
-    KmeansFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
+    // Apply threshold filter
+    ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
+    ThresholdFilter->SetOutsideValue(0);
+    ThresholdFilter->ThresholdBelow(128);
+    ThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
+    ThresholdFilter->SetNumberOfThreads(num_threads);
     */
+
+    printCentroids(RelabelFilter);
+
+    std::cout << "Number of objects detected: " << RelabelFilter->GetNumberOfObjects() << std::endl;
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
-    typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
-    typedef itk::OrientedImage<BinaryPixelType, 2> BinaryOutputImageType;
-    typedef itk::ImageSeriesWriter<Binary3DImageType, BinaryOutputImageType> WriterType;
     WriterType::Pointer writer = WriterType::New();
     // CHANGE INPUT TO LAST FILTER USED
     writer->SetInput(BinaryThresholdFilter->GetOutput());
@@ -226,8 +191,6 @@ int main(int argc, char* argv[])
 
     // Write binary mask files
     // Set up FileSeriesWriter for masks
-    typedef itk::OrientedImage<BinaryPixelType, 2> MaskOutputImageType;
-    typedef itk::ImageSeriesWriter<Binary3DImageType, MaskOutputImageType> MaskWriterType;
     MaskWriterType::Pointer MaskWriter = MaskWriterType::New();
     MaskWriter->SetInput(BinaryDilateFilter->GetOutput());
     MaskWriter->SetImageIO(dcmIO);

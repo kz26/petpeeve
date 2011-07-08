@@ -11,7 +11,7 @@ PROJECT(petpeeve)
 FIND_PACKAGE(ITK REQUIRED)
 INCLUDE(${ITK_USE_FILE})
 
-ADD_EXECUTABLE(petpeeve petpeeve.cxx)
+ADD_EXECUTABLE(petpeeve petpeeve.cxx ext_functions.cxx)
 SET(CMAKE_CXX_FLAGS "-g")
 
 TARGET_LINK_LIBRARIES(petpeeve ITKCommon ITKIO ITKAlgorithms)
