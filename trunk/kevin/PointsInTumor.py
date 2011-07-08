@@ -14,11 +14,12 @@ lines = 0
 f = open(sys.argv[1], 'r')
 for line in f:
     l = line.rstrip().split(" ")
-    x = int(l[0])
-    y = int(l[1])
-    z = "%04d" % (int(l[2]))
+    x = int(round(float(l[0])))
+    y = int(round(float(l[1])))
+    z = "%04d" % (int(round(float(l[2]))))
 
     mfp = os.path.join(sys.argv[2], "Img001_%s" % (z))
+    if not os.path.exists(mfp): continue
     ds = dicom.read_file(mfp)
     if ds.pixel_array[x][y] != 0:
         print line,
