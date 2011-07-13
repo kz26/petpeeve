@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # Kevin Zhang
-# 07/12/2011
+# 07/13/2011
 # Reverses the z coordinate in a text file of points
 # A valid input file has three or four space-delimited integers on each line (x y z [size_in_pixels])
 
-import sys, re
+import os, sys, re
 
 if len(sys.argv) != 3 and len(sys.argv) != 4:
-    print "Usage: %s seeds_file.txt total_num_slices [-axis]\n-axis flag also flips x,y coordinates to y,x" % (sys.argv[0])
+    print "Usage: %s seeds_file.txt reference_dir [-axis]\n-axis flag also flips x,y coordinates to y,x" % (sys.argv[0])
     sys.exit(-1)
 
 switchxy = False
@@ -15,7 +15,7 @@ if len(sys.argv) == 4 and sys.argv[3] == "-axis":
     switchxy = True
 linepat = re.compile("[0-9]+ [0-9]+ [0-9]+([0-9]+)?")
 
-total = int(sys.argv[2])
+total = len(os.listdir(sys.argv[2]))
 points = []
 f = open(sys.argv[1], 'r')
 f.readline()
