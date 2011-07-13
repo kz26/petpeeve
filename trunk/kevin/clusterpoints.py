@@ -28,7 +28,7 @@ if len(sys.argv) != 2:
 
 data = np.loadtxt(sys.argv[1], usecols = (0, 1, 2))
 
-clusters = fclusterdata(data, 8, criterion='distance')
+clusters = fclusterdata(data, 50, criterion='maxclust')
 #clusters = linkage(data)
 
 centroids = getCentroids(data, clusters)

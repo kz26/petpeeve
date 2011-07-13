@@ -87,12 +87,21 @@ int main(int argc, char* argv[])
     //MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
     MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
 
+    /*
     // Apply recursive Gaussian blur
     RGFilterType::Pointer RGFilter = RGFilterType::New();
     RGFilter->SetNormalizeAcrossScale(false);
     RGFilter->SetSigma(5);
     RGFilter->SetNumberOfThreads(num_threads);
     RGFilter->SetInput(MaskFilter->GetOutput());
+    */
+
+    // Multiresolution pyramid filter
+    MultiresFilterType::Pointer MultiresFilter = MultiresFilterType::New();
+    unsigned int startfactors[3] = {8, 8, 1};
+    MultiresFilter->SetInput(MaskFilter->GetOutput());
+    MultiresFilter->SetNumberOfThreads(num_threads);
+    MultiresFilter->SetStartingShrinkFactors(startfactors);
 
     /*
     // Median filter
@@ -117,10 +126,11 @@ int main(int argc, char* argv[])
 
     // Apply convex image filter
     ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(1000);
+    ConvexFilter->SetHeight(100);
     ConvexFilter->SetNumberOfThreads(num_threads);
     //ConvexFilter->FullyConnectedOn();
-    ConvexFilter->SetInput(RGFilter->GetOutput());
+    //ConvexFilter->SetInput(RGFilter->GetOutput());
+    ConvexFilter->SetInput(MultiresFilter->GetOutput());
 
     // Rescale image intensity
     RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
