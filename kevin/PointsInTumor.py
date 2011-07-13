@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# Kevin Zhang
+# 07/12/2011
 # Reads in a text file of coordinate locations and calulates how many are true positives using a mask
 # Arguments: coordinatesFile dcm_mask_dir
 
@@ -19,12 +21,15 @@ for line in f:
     z = "%04d" % (int(round(float(l[2]))))
 
     mfp = os.path.join(sys.argv[2], "Img001_%s" % (z))
-    if not os.path.exists(mfp): continue
+    if not os.path.exists(mfp):
+        print "WARNING: %s not found, skipping" % (mfp)
+        continue
     ds = dicom.read_file(mfp)
     if ds.pixel_array[x][y] != 0:
         print line,
         hits += 1
     lines += 1
 
-print "# of true positives: %s" % (hits)
-print "# of reported points: %s" % (lines)
+print "\n# of TPs: %s" % (hits)
+print "# of FPs: %s" % (lines - hits)
+print "Total # of points: %s" % (lines)

@@ -18,6 +18,7 @@
 #include "itkBinaryErodeImageFilter.h"
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryThresholdImageFilter.h"
+#include "itkMedianImageFilter.h"
 #include "itkSmoothingRecursiveGaussianImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkHConvexImageFilter.h"
@@ -46,6 +47,7 @@ typedef itk::BinaryBallStructuringElement<BinaryPixelType, 3> BBStructuringEleme
 typedef itk::BinaryErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> ErodeFilterType;
 typedef itk::BinaryDilateImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> DilateFilterType;
 typedef itk::MaskNegatedImageFilter<InputImageType, Binary3DImageType, InputImageType> MaskFilterType;
+typedef itk::MedianImageFilter<InputImageType, InputImageType> MedianFilterType;
 typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, InputImageType> RGFilterType;
 typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
 typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescaleIntensityFilterType;

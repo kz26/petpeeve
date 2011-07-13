@@ -1,4 +1,6 @@
-// C++ header declarations for external functions
+// C++ header declarations for ext_functions.cxx
+// Kevin Zhang
+// 07/12/2011
 #ifndef EXTF_H
 #define EXTF_H
 

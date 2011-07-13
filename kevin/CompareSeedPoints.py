@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # Kevin Zhang
-# 07/05/2011
+# 07/12/2011
 # Reads in a set of manual seed points and compares it to a set of generated seed points
 # Arguments: points1 points2
 
@@ -12,8 +12,8 @@ if len(sys.argv) != 4:
     sys.exit(-1)
 
 #f1 = open(sys.argv[1], 'r')
-f1data = np.genfromtxt(sys.argv[1])
-f2data = np.genfromtxt(sys.argv[2])
+f1data = np.loadtxt(sys.argv[1], usecols = (0, 1, 2))
+f2data = np.loadtxt(sys.argv[2], usecols = (0, 1, 2))
 threshold = int(sys.argv[3]) 
 
 counter = np.zeros(f1data.shape[0])
