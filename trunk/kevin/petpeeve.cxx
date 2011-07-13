@@ -1,6 +1,6 @@
 // Kevin Zhang
 // Bria Connolly
-// Last update: June 29, 2011
+// Last update: 07/12/2011
 // DICOM image set is read in. An Otsu Threshold Filter is then run over the images.
 // The binary image output from the Otsu Filter is then used as a mask over the original image
 // to complete body segmentation.
@@ -95,6 +95,18 @@ int main(int argc, char* argv[])
     RGFilter->SetInput(MaskFilter->GetOutput());
 
     /*
+    // Median filter
+    MedianFilterType::Pointer MedianFilter = MedianFilterType::New();
+    InputImageType::SizeType indexRadius;
+    indexRadius[0] = 1;
+    indexRadius[1] = 1;
+    indexRadius[2] = 1;
+    MedianFilter->SetRadius(indexRadius);
+    MedianFilter->SetNumberOfThreads(num_threads);
+    MedianFilter->SetInput(RGFilter->GetOutput());
+    */
+
+    /*
     // Apply threshold filter
     ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
     ThresholdFilter->SetOutsideValue(0);
@@ -105,7 +117,7 @@ int main(int argc, char* argv[])
 
     // Apply convex image filter
     ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(700);
+    ConvexFilter->SetHeight(1000);
     ConvexFilter->SetNumberOfThreads(num_threads);
     //ConvexFilter->FullyConnectedOn();
     ConvexFilter->SetInput(RGFilter->GetOutput());
@@ -141,7 +153,7 @@ int main(int argc, char* argv[])
     CCFilter->SetNumberOfThreads(num_threads);
     CCFilter->SetInput(BinaryThresholdFilter->GetOutput());
     CCFilter->SetMaskImage(BinaryThresholdFilter->GetOutput());
-    CCFilter->FullyConnectedOn();
+    //CCFilter->FullyConnectedOn();
 
     // Relabel component filter
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
@@ -160,9 +172,25 @@ int main(int argc, char* argv[])
     ThresholdFilter->SetNumberOfThreads(num_threads);
     */
 
+    /*
+    typedef std::vector<unsigned long> SizesInPixelsType;
+    const SizesInPixelsType & sizesInPixels = RelabelFilter->GetSizeOfObjectsInPixels();
+    SizesInPixelsType::const_iterator sizeItr = sizesInPixels.begin();
+    SizesInPixelsType::const_iterator sizeEnd = sizesInPixels.end();
+    unsigned int objnum = 0;
+    while(sizeItr != sizeEnd)
+    {
+        std::cout << "Size of object #" << objnum << ": " << *sizeItr << std::endl;
+        objnum++;
+        sizeItr++;
+    }
+    */
+
     printCentroids(RelabelFilter);
 
-    std::cout << "Number of objects detected: " << RelabelFilter->GetNumberOfObjects() << std::endl;
+    std::cout << "Number of objects detected (all): " << RelabelFilter->GetOriginalNumberOfObjects() << std::endl;
+    std::cout << "Number of objects detected (within min size threshold): " << RelabelFilter->GetNumberOfObjects() << std::endl;
+
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
