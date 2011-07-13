@@ -17,6 +17,7 @@ if not os.path.exists(sys.argv[2]):
     os.mkdir(sys.argv[2])
 
 scriptlist = []
+bindir = os.getcwd()
 
 for case in os.listdir(sys.argv[1]):
     casepath = os.path.join(sys.argv[1], case)
@@ -32,16 +33,19 @@ for case in os.listdir(sys.argv[1]):
 
         scriptfn = "%s_%s.sh" % (case, ab)
         scriptlist.append(scriptfn)
+        numofslices = len(os.listdir(os.path.join(subcasepath, "PT")))
         f = open(os.path.join(sys.argv[3], scriptfn), 'w')
         f.write("#!/bin/bash\n")
         f.write("#$ -N %s\n" % (scriptfn))
         f.write("#$ -j y\n")
         f.write("#$ -o %s\n" % (os.path.join(outputpath, "run.log")))
         f.write("#$ -cwd\n")
-        f.write("/home/zhangk/bin/petpeeve %s %s %s %s\n" % (os.path.join(subcasepath, "PT"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_mask"), "1"))
-        f.write("/home/zhangk/bin/findpoints.py %s > %s\n" % (os.path.join(outputpath, "output"), os.path.join(outputpath, "found_points.txt")))
-        f.write("/home/zhangk/bin/PointsInTumor.py %s %s > %s\n" % (os.path.join(outputpath, "found_points.txt"), os.path.join(subcasepath, "PT_manual_contours_bin"), os.path.join(outputpath, "points_in_tumor.txt")))
-        f.write("/home/zhangk/bin/CompareSeedPoints.py %s %s %s > %s\n" % (os.path.join(subcasepath, "seeds-fixed.txt"), os.path.join(outputpath, "found_points.txt"), "5", os.path.join(outputpath, "seed_compare.txt")))
+        f.write("%s/utils/delslices.py %s %s 2" % (bindir, os.path.join(subcasepath, "PT"), os.path.join(outputpath, "PT_trimmed")))
+        f.write("%s/petpeeve %s %s %s %s > %s\n" % (bindir, os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_mask"), "2", os.path.join(outputpath, "centroids.txt")))
+        f.write("%s/utils/seedreverse.py %s %s > %s" % (bindir, os.path.join(outputpath, "centroids.txt"), numofslices, os.path.join(outputpath, "centroids-fixed.txt")))
+        #f.write("/home/zhangk/bin/findpoints.py %s > %s\n" % (os.path.join(outputpath, "output"), os.path.join(outputpath, "found_points.txt")))
+        f.write("%s/PointsInTumor.py %s %s > %s\n" % (bindir, os.path.join(outputpath, "centroids-fixed.txt"), os.path.join(subcasepath, "PT_manual_contours_bin"), os.path.join(outputpath, "points_in_tumor.txt")))
+        f.write("%s/CompareSeedPoints.py %s %s %s > %s\n" % (bindir, os.path.join(subcasepath, "seeds-fixed.txt"), os.path.join(outputpath, "centroids-fixed.txt"), "5", os.path.join(outputpath, "seed_compare.txt")))
         f.close()
 
 mf = open(sys.argv[4], 'w')
