@@ -26,6 +26,7 @@
 #include "itkConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 #include "itkImageRegionConstIteratorWithIndex.h"
+#include "itkMultiResolutionPyramidImageFilter.h"
 
 // type definitions
 typedef signed short DCMPixelType;
@@ -47,8 +48,9 @@ typedef itk::BinaryBallStructuringElement<BinaryPixelType, 3> BBStructuringEleme
 typedef itk::BinaryErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> ErodeFilterType;
 typedef itk::BinaryDilateImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> DilateFilterType;
 typedef itk::MaskNegatedImageFilter<InputImageType, Binary3DImageType, InputImageType> MaskFilterType;
-typedef itk::MedianImageFilter<InputImageType, InputImageType> MedianFilterType;
+//typedef itk::MedianImageFilter<InputImageType, InputImageType> MedianFilterType;
 typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, InputImageType> RGFilterType;
+typedef itk::MultiResolutionPyramidImageFilter<InputImageType, InputImageType> MultiresFilterType;
 typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
 typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescaleIntensityFilterType;
 typedef itk::CastImageFilter<InputImageType, Binary3DImageType> DCMToBinaryCastFilterType;

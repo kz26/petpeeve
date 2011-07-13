@@ -54,7 +54,7 @@ void printCentroids(RelabelFilterType::Pointer RelabelFilter)
     {
         // i[0] = col, i[1] = row, i[2] = slice according to the ITK docs
         // i[1], i[0], i[2] row, col, slice will be considered the standard output format
-        if(objsizes[i] <= 20)
+        //if(objsizes[i] <= 20)
             std::cout << round(centroids[i][1]) << " " << round(centroids[i][0]) << " " << round(centroids[i][2]) << " " << objsizes[i] << std::endl;
     }
 
