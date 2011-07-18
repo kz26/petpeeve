@@ -8,5 +8,6 @@
 
 int round(float);
 void printCentroids(RelabelFilterType::Pointer);
+InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer, int);
 
 #endif

@@ -1,6 +1,6 @@
-// C++ header declarations for external functions
-#ifndef EXTF_H
-#define EXTF_H
+// C++ typedef declarations
+#ifndef ITKT_H
+#define ITKT_H
 
 #include "itkOrientedImage.h"
 #include "itkGDCMImageIO.h"
@@ -26,15 +26,21 @@
 #include "itkConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 #include "itkImageRegionConstIteratorWithIndex.h"
-#include "itkMultiResolutionPyramidImageFilter.h"
+//#include "itkMultiResolutionPyramidImageFilter.h"
+//#include "SmoothingRecursiveGaussianMRP.h"
+#include "itkResampleImageFilter.h"
+#include "itkAffineTransform.h"
+#include "itkNearestNeighborInterpolateImageFunction.h"
+#include "itkIdentityTransform.h"
+#include "itkLinearInterpolateImageFunction.h"
 
 // type definitions
 typedef signed short DCMPixelType;
-typedef unsigned char BinaryPixelType;
-typedef unsigned long LongPixelType;
+typedef unsigned char EightBitPixelType;
+typedef signed short LongPixelType;
 
 typedef itk::OrientedImage<DCMPixelType, 3> InputImageType;
-typedef itk::OrientedImage<BinaryPixelType, 3> Binary3DImageType;
+typedef itk::OrientedImage<EightBitPixelType, 3> EightBitImageType;
 typedef itk::OrientedImage<LongPixelType, 3> LongImageType;
 
 typedef itk::ImageSeriesReader<InputImageType> ReaderType;
@@ -43,32 +49,38 @@ typedef itk::GDCMSeriesFileNames NamesGeneratorType;
 
 typedef std::vector<std::string> FileNamesContainer;
 
-typedef itk::OtsuThresholdImageFilter<InputImageType, Binary3DImageType> OtsuFilterType;
-typedef itk::BinaryBallStructuringElement<BinaryPixelType, 3> BBStructuringElementBinType;
-typedef itk::BinaryErodeImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> ErodeFilterType;
-typedef itk::BinaryDilateImageFilter<Binary3DImageType, Binary3DImageType, BBStructuringElementBinType> DilateFilterType;
-typedef itk::MaskNegatedImageFilter<InputImageType, Binary3DImageType, InputImageType> MaskFilterType;
+typedef itk::OtsuThresholdImageFilter<InputImageType, EightBitImageType> OtsuFilterType;
+typedef itk::BinaryBallStructuringElement<EightBitPixelType, 3> BBStructuringElementBinType;
+typedef itk::BinaryErodeImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> ErodeFilterType;
+typedef itk::BinaryDilateImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> DilateFilterType;
+typedef itk::MaskNegatedImageFilter<InputImageType, EightBitImageType, InputImageType> MaskFilterType;
 //typedef itk::MedianImageFilter<InputImageType, InputImageType> MedianFilterType;
 typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, InputImageType> RGFilterType;
-typedef itk::MultiResolutionPyramidImageFilter<InputImageType, InputImageType> MultiresFilterType;
+//typedef itk::MultiResolutionPyramidImageFilter<InputImageType, InputImageType> MultiresFilterType;
 typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
 typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescaleIntensityFilterType;
-typedef itk::CastImageFilter<InputImageType, Binary3DImageType> DCMToBinaryCastFilterType;
-typedef itk::ThresholdImageFilter<Binary3DImageType> ThresholdFilterType;
-typedef itk::BinaryThresholdImageFilter<Binary3DImageType, Binary3DImageType> BinaryThresholdFilterType;
-typedef itk::ConnectedComponentImageFilter<Binary3DImageType, LongImageType, Binary3DImageType> CCFilterType;
+typedef itk::CastImageFilter<InputImageType, EightBitImageType> DCMToBinaryCastFilterType;
+typedef itk::ThresholdImageFilter<EightBitImageType> EightBitThresholdFilterType;
+typedef itk::ThresholdImageFilter<InputImageType> ThresholdFilterType;
+typedef itk::BinaryThresholdImageFilter<EightBitImageType, EightBitImageType> BinaryThresholdFilterType;
+typedef itk::ConnectedComponentImageFilter<EightBitImageType, LongImageType, EightBitImageType> CCFilterType;
 typedef itk::RelabelComponentImageFilter<LongImageType, LongImageType> RelabelFilterType;
 
 // File series writer types
-typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
-typedef itk::OrientedImage<BinaryPixelType, 2> BinaryOutputImageType;
-typedef itk::ImageSeriesWriter<Binary3DImageType, OutputImageType> WriterType;
+typedef itk::OrientedImage<EightBitPixelType, 2> OutputImageType;
+typedef itk::OrientedImage<EightBitPixelType, 2> BinaryOutputImageType;
+typedef itk::ImageSeriesWriter<EightBitImageType, OutputImageType> WriterType;
 
+// Labeled file series writer types (from RelabelComponentImageFilter)
+typedef itk::ImageSeriesWriter<InputImageType, OutputImageType> LabeledWriterType;
+
+/*
 // Mask writer types
-typedef itk::OrientedImage<BinaryPixelType, 2> MaskOutputImageType;
-typedef itk::ImageSeriesWriter<Binary3DImageType, MaskOutputImageType> MaskWriterType;
+typedef itk::OrientedImage<EightBitPixelType, 2> MaskOutputImageType;
+typedef itk::ImageSeriesWriter<EightBitImageType, MaskOutputImageType> MaskWriterType;
+*/
 
 // function definitions
-void printCentroids(RelabelFilterType::Pointer);
+//void printCentroids(RelabelFilterType::Pointer);
 
 #endif

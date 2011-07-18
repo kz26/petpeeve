@@ -13,8 +13,8 @@ int round(float num)
 // imported from 2009_11_06_CandidateFinder_adaptive_best
 void printCentroids(RelabelFilterType::Pointer RelabelFilter)
 {
-    LongImageType::RegionType InputRegion;
-    LongImageType::RegionType::IndexType InputStart;
+    InputImageType::RegionType InputRegion;
+    InputImageType::RegionType::IndexType InputStart;
 
     InputStart[0] = 0;
     InputStart[1] = 0;
@@ -37,7 +37,7 @@ void printCentroids(RelabelFilterType::Pointer RelabelFilter)
         {
             if(InputIterator.Get() == i + 1) // need to skip pixel value 0 for background
             {
-             const Binary3DImageType::IndexType index = InputIterator.GetIndex();
+             const LongImageType::IndexType index = InputIterator.GetIndex();
              xTotal += index[0];
              yTotal += index[1];
              zTotal += index[2];
@@ -58,5 +58,66 @@ void printCentroids(RelabelFilterType::Pointer RelabelFilter)
             std::cout << round(centroids[i][1]) << " " << round(centroids[i][0]) << " " << round(centroids[i][2]) << " " << objsizes[i] << std::endl;
     }
 
+}
+
+InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, int levels)
+{
+    // Set up resample filter
+    typedef itk::ResampleImageFilter<InputImageType, InputImageType> ResampleImageFilterType;
+    ResampleImageFilterType::Pointer ResampleImageFilter = ResampleImageFilterType::New();
+
+    // Set up affine transform
+    typedef itk::IdentityTransform<double, 3> TransformType;
+    TransformType::Pointer Transform = TransformType::New();
+    Transform->SetIdentity();
+    ResampleImageFilter->SetTransform(Transform);
+
+    // Set up interpolator
+    typedef itk::LinearInterpolateImageFunction<InputImageType, double> InterpolatorType;
+    InterpolatorType::Pointer Interpolator = InterpolatorType::New();
+    ResampleImageFilter->SetInterpolator(Interpolator);
+    
+    // Set parameters
+    ResampleImageFilter->SetDefaultPixelValue(0);
+    //double spacing[3] = {1.0, 1.0, 1.0};
+    const InputImageType::SpacingType origspacing = inputimage->GetSpacing();
+    InputImageType::SpacingType newspacing;
+    ResampleImageFilter->SetOutputSpacing(newspacing);
+    ResampleImageFilter->SetOutputOrigin(inputimage->GetOrigin());
+    ResampleImageFilter->SetOutputDirection(inputimage->GetDirection());
+    const InputImageType::SizeType origsize = inputimage->GetLargestPossibleRegion().GetSize();
+    InputImageType::SizeType newsize;
+    for (int i = 0; i < 3; i++)
+    {
+        newsize[i] = origsize[i];
+        newspacing[i] = origspacing[i];
+    }
+    // Set up smoothing recursive Gaussian blur
+    RGFilterType::Pointer RGFilter = RGFilterType::New();
+    RGFilter->SetNormalizeAcrossScale(false);
+    int sigmas[3] = {3, 5, 7};
+
+    InputImageType::Pointer myimage = inputimage;
+    for(int i = 0; i < levels; i++)
+    {
+        RGFilter->SetSigma(sigmas[i]);
+        RGFilter->SetInput(myimage);
+        for (int j = 0; j < 2; j++)
+        {
+            newsize[j] = round(static_cast<float>(newsize[j]) * 0.75);
+            newspacing[j] = newspacing[j] / 0.75;
+        }
+        std::cout << newsize[0] << " " << newsize[1] << " " << newsize[2] << std::endl;
+        ResampleImageFilter->SetSize(newsize);
+        ResampleImageFilter->SetOutputSpacing(newspacing);
+        ResampleImageFilter->SetInput(RGFilter->GetOutput());
+        ResampleImageFilter->UpdateLargestPossibleRegion();
+        myimage = ResampleImageFilter->GetOutput();
+        myimage->DisconnectPipeline();
+
+        //const InputImageType::SizeType mysize = myimage->GetLargestPossibleRegion().GetSize();
+        //std::cout << mysize[0] << " " << mysize[1] << " " << mysize[2] << std::endl;
+    }
+    return myimage;
 }
 
