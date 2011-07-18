@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # Kevin Zhang
-# 07/12/2011
+# 07/13/2011
 # Reads in a set of manual seed points and compares it to a set of generated seed points
 # Arguments: points1 points2
 
-import os, sys
+import os, sys, math
 import numpy as np
 
 if len(sys.argv) != 4:
@@ -30,7 +30,9 @@ for row1 in f1data:
     print row1
     for row2 in f2data:
         diff = row1 - row2
-        if abs(np.min(diff)) <= threshold and abs(np.max(diff)) <= threshold:
+        diff2 = [math.pow(i, 2) for i in diff[:2]]
+        #if abs(np.min(diff)) <= threshold and abs(np.max(diff)) <= threshold:
+        if  math.sqrt(np.sum(diff2)) <= threshold and abs(diff[2]) <= threshold:
             print "    ",
             print row2
             counter[cindex] = 1

@@ -1,9 +1,6 @@
 // Kevin Zhang
 // Bria Connolly
-// Last update: 07/12/2011
-// DICOM image set is read in. An Otsu Threshold Filter is then run over the images.
-// The binary image output from the Otsu Filter is then used as a mask over the original image
-// to complete body segmentation.
+// Last update: 07/13/2011
 
 #include "itktypes.h"
 #include "ext_functions.h"
@@ -13,10 +10,11 @@ int main(int argc, char* argv[])
 
     if (argc < 4)
     {
-	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dcm_directory outputmask_dcm_directory [# threads]" << std::endl;
+	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dir sigma [# threads]" << std::endl;
         return -1;
     }	
 
+    int sigma = atoi(argv[3]);
     int num_threads;
     if (argc == 5)
         num_threads = atoi(argv[4]);
@@ -71,7 +69,7 @@ int main(int argc, char* argv[])
     BinaryDilateFilter->SetInput(BinaryErodeFilter->GetOutput());
 
     /*
-    Binary3DImageType::Pointer BDOutputImage = OtsuFilter->GetOutput();
+    EightBitImageType::Pointer BDOutputImage = OtsuFilter->GetOutput();
     for(int i = 0; i < 1; i++)
     {
         BinaryDilateFilter->SetInput(BDOutputImage);
@@ -91,47 +89,36 @@ int main(int argc, char* argv[])
     // Apply recursive Gaussian blur
     RGFilterType::Pointer RGFilter = RGFilterType::New();
     RGFilter->SetNormalizeAcrossScale(false);
-    RGFilter->SetSigma(5);
+    RGFilter->SetSigma(sigma);
     RGFilter->SetNumberOfThreads(num_threads);
     RGFilter->SetInput(MaskFilter->GetOutput());
-
     */
-    
+
+    /*
     // Multiresolution pyramid filter
     MultiresFilterType::Pointer MultiresFilter = MultiresFilterType::New();
-    unsigned int startfactors[3] = {8, 8, 1};
+    itk::Array2D<unsigned int> factors(2, 3);
+    factors(0, 0) = 4;
+    factors(0, 1) = 4;
+    factors(0, 2) = 1;
+    factors(1, 0) = 2;
+    factors(1, 1) = 2;
+    factors(1, 2) = 1;
+
     MultiresFilter->SetInput(MaskFilter->GetOutput());
     MultiresFilter->SetNumberOfThreads(num_threads);
-    MultiresFilter->SetStartingShrinkFactors(startfactors);
-    MultiresFilter->SetNumberOfLevels(2);
-    /*
-    // Median filter
-    MedianFilterType::Pointer MedianFilter = MedianFilterType::New();
-    InputImageType::SizeType indexRadius;
-    indexRadius[0] = 1;
-    indexRadius[1] = 1;
-    indexRadius[2] = 1;
-    MedianFilter->SetRadius(indexRadius);
-    MedianFilter->SetNumberOfThreads(num_threads);
-    MedianFilter->SetInput(RGFilter->GetOutput());
+    MultiresFilter->SetSchedule(factors);
     */
 
-    /*
-    // Apply threshold filter
-    ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
-    ThresholdFilter->SetOutsideValue(0);
-    ThresholdFilter->ThresholdBelow(10000);
-    ThresholdFilter->SetInput(RGFilter->GetOutput());
-    ThresholdFilter->SetNumberOfThreads(num_threads);
-    */
-
+    MaskFilter->Update();
+    InputImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), 3);
     // Apply convex image filter
     ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(850);
+    ConvexFilter->SetHeight(100);
     ConvexFilter->SetNumberOfThreads(num_threads);
     //ConvexFilter->FullyConnectedOn();
     //ConvexFilter->SetInput(RGFilter->GetOutput());
-    ConvexFilter->SetInput(MultiresFilter->GetOutput());
+    ConvexFilter->SetInput(MultiImage);
 
     // Rescale image intensity
     RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
@@ -145,11 +132,11 @@ int main(int argc, char* argv[])
     DCMToBinaryCastFilter->SetInput(RescaleIntensityFilter->GetOutput());
 
     // Apply threshold filter
-    ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
-    ThresholdFilter->SetOutsideValue(0);
-    ThresholdFilter->ThresholdBelow(128);
-    ThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
-    ThresholdFilter->SetNumberOfThreads(num_threads);
+    EightBitThresholdFilterType::Pointer EightBitThresholdFilter = EightBitThresholdFilterType::New();
+    EightBitThresholdFilter->SetOutsideValue(0);
+    EightBitThresholdFilter->ThresholdBelow(128);
+    EightBitThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
+    EightBitThresholdFilter->SetNumberOfThreads(num_threads);
 
     // Apply binary threshold filter
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
@@ -157,7 +144,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->SetOutsideValue(0);
     BinaryThresholdFilter->SetLowerThreshold(1);
     BinaryThresholdFilter->SetUpperThreshold(255);
-    BinaryThresholdFilter->SetInput(ThresholdFilter->GetOutput());
+    BinaryThresholdFilter->SetInput(EightBitThresholdFilter->GetOutput());
 
     // Connected component filter
     CCFilterType::Pointer CCFilter = CCFilterType::New();
@@ -170,18 +157,9 @@ int main(int argc, char* argv[])
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
     RelabelFilter->SetNumberOfThreads(num_threads);
-    RelabelFilter->SetMinimumObjectSize(2);
+    //RelabelFilter->SetMinimumObjectSize(2);
 
-    RelabelFilter->Update();
-
-    /*
-    // Apply threshold filter
-    ThresholdFilterType::Pointer ThresholdFilter = ThresholdFilterType::New();
-    ThresholdFilter->SetOutsideValue(0);
-    ThresholdFilter->ThresholdBelow(128);
-    ThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
-    ThresholdFilter->SetNumberOfThreads(num_threads);
-    */
+    //RelabelFilter->Update();
 
     /*
     typedef std::vector<unsigned long> SizesInPixelsType;
@@ -197,17 +175,17 @@ int main(int argc, char* argv[])
     }
     */
 
+    /*
     printCentroids(RelabelFilter);
-
     std::cout << "Number of objects detected (all): " << RelabelFilter->GetOriginalNumberOfObjects() << std::endl;
     std::cout << "Number of objects detected (within min size threshold): " << RelabelFilter->GetNumberOfObjects() << std::endl;
-
+    */
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
     WriterType::Pointer writer = WriterType::New();
     // CHANGE INPUT TO LAST FILTER USED
-    writer->SetInput(BinaryThresholdFilter->GetOutput());
+    writer->SetInput(EightBitThresholdFilter->GetOutput());
     //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
@@ -226,30 +204,32 @@ int main(int argc, char* argv[])
 	    std::cerr << e << std::endl;
 	    return -1;
     }
-    std::cout << "Files successfully written." << std::endl;
+    std::cout << "Output files successfully written." << std::endl;
 
-    // Write binary mask files
+    /*
+    // Write labeled output files
     // Set up FileSeriesWriter for masks
-    MaskWriterType::Pointer MaskWriter = MaskWriterType::New();
-    MaskWriter->SetInput(BinaryDilateFilter->GetOutput());
-    MaskWriter->SetImageIO(dcmIO);
-    const char * MaskOutputDirectory = argv[3];
-    itksys::SystemTools::MakeDirectory(MaskOutputDirectory);
-    nameGenerator->SetOutputDirectory(MaskOutputDirectory);
-    MaskWriter->SetFileNames(nameGenerator->GetOutputFileNames());
-    MaskWriter->SetMetaDataDictionaryArray(reader->GetMetaDataDictionaryArray());
+    LabeledWriterType::Pointer LabeledWriter = LabeledWriterType::New();
+    LabeledWriter->SetInput(CCFilter->GetOutput());
+    LabeledWriter->SetImageIO(dcmIO);
+    const char * LabeledOutputDirectory = argv[3];
+    itksys::SystemTools::MakeDirectory(LabeledOutputDirectory);
+    nameGenerator->SetOutputDirectory(LabeledOutputDirectory);
+    LabeledWriter->SetFileNames(nameGenerator->GetOutputFileNames());
+    LabeledWriter->SetMetaDataDictionaryArray(reader->GetMetaDataDictionaryArray());
 
     try
     {
-        MaskWriter->Update();
+        LabeledWriter->Update();
     }
     catch (itk::ExceptionObject & e)
     {
-        std::cerr << "Exception caught in MaskWriter." << std::endl;
+        std::cerr << "Exception caught in LabeledWriter." << std::endl;
         std::cerr << e << std::endl;
         return -1;
     }
-    std::cout << "Mask files successfully written." << std::endl;
+    std::cout << "Relabeled files successfully written." << std::endl;
+    */
 
     return 0;
 
