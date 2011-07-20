@@ -3,8 +3,9 @@
 # 07/13/2011
 # "Fixes" a text file of coordinates
 # Available Fixes:
-#   Reverses the z coordinate in a text file of points
-#   Changes the z offset (e.g. z = 1 becomes z = 3 if the first image in the reference dir is Img001_0003
+# Reverses the z coordinate in a text file of points
+# (Optional) Changes the z offset (e.g. z = 1 becomes z = 3 if the first image in the reference dir is Img001_0003
+# (Optional) Swaps x,y coordinates  
 # A valid input file has three or four space-delimited integers on each line (x y z [size_in_pixels])
 
 import os, sys, re, optparse

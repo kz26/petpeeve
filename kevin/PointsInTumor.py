@@ -4,7 +4,7 @@
 # Reads in a text file of coordinate locations and calulates how many are true positives using a mask
 # Arguments: coordinatesFile dcm_mask_dir
 
-import os, sys, dicom
+import os, sys, dicom, re
 
 if len(sys.argv) != 3:
     print "Usage: %s coordinatesFile dcm_mask_dir" % (sys.argv[0])
@@ -13,8 +13,11 @@ if len(sys.argv) != 3:
 hits = 0
 lines = 0
 
+linepat = re.compile("[0-9]+")
+
 f = open(sys.argv[1], 'r')
 for line in f:
+    if not linepat.match(line.rstrip()): continue
     l = line.rstrip().split(" ")
     x = int(round(float(l[0])))
     y = int(round(float(l[1])))

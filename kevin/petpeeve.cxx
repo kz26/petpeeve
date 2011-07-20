@@ -1,6 +1,6 @@
 // Kevin Zhang
 // Bria Connolly
-// Last update: 07/13/2011
+// Last update: 07/19/2011
 
 #include "itktypes.h"
 #include "ext_functions.h"
@@ -10,11 +10,11 @@ int main(int argc, char* argv[])
 
     if (argc < 4)
     {
-	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dir sigma [# threads]" << std::endl;
+	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dir num_levels [# threads]" << std::endl;
         return -1;
     }	
 
-    int sigma = atoi(argv[3]);
+    int level = atoi(argv[3]);
     int num_threads;
     if (argc == 5)
         num_threads = atoi(argv[4]);
@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
         num_threads = 1;
     //std::cout << "Number of args: " << argc << std::endl;
     std::cout << "Number of threads: " << num_threads << std::endl;
+    std::cout << "Number of multiscale levels: " << level << std::endl;
 
     ReaderType::Pointer reader = ReaderType::New();
 
@@ -111,10 +112,10 @@ int main(int argc, char* argv[])
     */
 
     MaskFilter->Update();
-    InputImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), 3);
+    InputImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), level, num_threads);
     // Apply convex image filter
     ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(100);
+    ConvexFilter->SetHeight(240);
     ConvexFilter->SetNumberOfThreads(num_threads);
     //ConvexFilter->FullyConnectedOn();
     //ConvexFilter->SetInput(RGFilter->GetOutput());
@@ -159,7 +160,7 @@ int main(int argc, char* argv[])
     RelabelFilter->SetNumberOfThreads(num_threads);
     //RelabelFilter->SetMinimumObjectSize(2);
 
-    //RelabelFilter->Update();
+    RelabelFilter->Update();
 
     /*
     typedef std::vector<unsigned long> SizesInPixelsType;
@@ -175,11 +176,9 @@ int main(int argc, char* argv[])
     }
     */
 
-    /*
     printCentroids(RelabelFilter);
     std::cout << "Number of objects detected (all): " << RelabelFilter->GetOriginalNumberOfObjects() << std::endl;
     std::cout << "Number of objects detected (within min size threshold): " << RelabelFilter->GetNumberOfObjects() << std::endl;
-    */
 
     // Write end result of pipeline
     // Set up FileSeriesWriter

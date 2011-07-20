@@ -34,6 +34,8 @@
 #include "itkIdentityTransform.h"
 #include "itkLinearInterpolateImageFunction.h"
 
+#include <algorithm>
+
 // type definitions
 typedef signed short DCMPixelType;
 typedef unsigned char EightBitPixelType;

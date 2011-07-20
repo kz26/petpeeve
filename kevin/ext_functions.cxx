@@ -5,6 +5,8 @@
  */
 #include "itktypes.h"
 
+using namespace std;
+
 int round(float num)
 {
     return static_cast<int>(floor(num + 0.5));
@@ -60,8 +62,10 @@ void printCentroids(RelabelFilterType::Pointer RelabelFilter)
 
 }
 
-InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, int levels)
+InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, int levels, int threads)
 {
+    // Set level
+    int real_level = min(levels, 3);
     // Set up resample filter
     typedef itk::ResampleImageFilter<InputImageType, InputImageType> ResampleImageFilterType;
     ResampleImageFilterType::Pointer ResampleImageFilter = ResampleImageFilterType::New();
@@ -85,6 +89,7 @@ InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, 
     ResampleImageFilter->SetOutputSpacing(newspacing);
     ResampleImageFilter->SetOutputOrigin(inputimage->GetOrigin());
     ResampleImageFilter->SetOutputDirection(inputimage->GetDirection());
+    ResampleImageFilter->SetNumberOfThreads(threads);
     const InputImageType::SizeType origsize = inputimage->GetLargestPossibleRegion().GetSize();
     InputImageType::SizeType newsize;
     for (int i = 0; i < 3; i++)
@@ -95,19 +100,20 @@ InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, 
     // Set up smoothing recursive Gaussian blur
     RGFilterType::Pointer RGFilter = RGFilterType::New();
     RGFilter->SetNormalizeAcrossScale(false);
-    int sigmas[3] = {3, 5, 7};
+    RGFilter->SetNumberOfThreads(threads);
+    int starting_sigma = 5;
 
     InputImageType::Pointer myimage = inputimage;
-    for(int i = 0; i < levels; i++)
+    for(int i = 0; i < real_level; i++)
     {
-        RGFilter->SetSigma(sigmas[i]);
+        RGFilter->SetSigma(starting_sigma);
         RGFilter->SetInput(myimage);
         for (int j = 0; j < 2; j++)
         {
             newsize[j] = round(static_cast<float>(newsize[j]) * 0.75);
             newspacing[j] = newspacing[j] / 0.75;
         }
-        std::cout << newsize[0] << " " << newsize[1] << " " << newsize[2] << std::endl;
+        //std::cout << newsize[0] << " " << newsize[1] << " " << newsize[2] << std::endl;
         ResampleImageFilter->SetSize(newsize);
         ResampleImageFilter->SetOutputSpacing(newspacing);
         ResampleImageFilter->SetInput(RGFilter->GetOutput());
@@ -115,6 +121,7 @@ InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, 
         myimage = ResampleImageFilter->GetOutput();
         myimage->DisconnectPipeline();
 
+        starting_sigma++;
         //const InputImageType::SizeType mysize = myimage->GetLargestPossibleRegion().GetSize();
         //std::cout << mysize[0] << " " << mysize[1] << " " << mysize[2] << std::endl;
     }
