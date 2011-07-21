@@ -26,13 +26,12 @@
 #include "itkConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 #include "itkImageRegionConstIteratorWithIndex.h"
-//#include "itkMultiResolutionPyramidImageFilter.h"
-//#include "SmoothingRecursiveGaussianMRP.h"
 #include "itkResampleImageFilter.h"
 #include "itkAffineTransform.h"
 #include "itkNearestNeighborInterpolateImageFunction.h"
 #include "itkIdentityTransform.h"
 #include "itkLinearInterpolateImageFunction.h"
+#include "itkLaplacianRecursiveGaussianImageFilter.h"
 
 #include <algorithm>
 
@@ -56,6 +55,7 @@ typedef std::vector<std::string> FileNamesContainer;
 typedef itk::CastImageFilter<DCMImageType, FloatImageType> DCMToFloatFilterType;
 typedef itk::CastImageFilter<FloatImageType, DCMImageType> FloatToDCMFilterType;
 typedef itk::CastImageFilter<LongImageType, DCMImageType> LongToDCMFilterType;
+typedef itk::CastImageFilter<EightBitImageType, DCMImageType> EightBitToDCMFilterType;
 
 typedef itk::OtsuThresholdImageFilter<FloatImageType, EightBitImageType> OtsuFilterType;
 typedef itk::BinaryBallStructuringElement<EightBitPixelType, 3> BBStructuringElementBinType;
@@ -63,6 +63,7 @@ typedef itk::BinaryErodeImageFilter<EightBitImageType, EightBitImageType, BBStru
 typedef itk::BinaryDilateImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> DilateFilterType;
 typedef itk::MaskNegatedImageFilter<FloatImageType, EightBitImageType, FloatImageType> MaskFilterType;
 typedef itk::SmoothingRecursiveGaussianImageFilter<FloatImageType, FloatImageType> RGFilterType;
+typedef itk::LaplacianRecursiveGaussianImageFilter<FloatImageType, FloatImageType> LoGFilterType;
 typedef itk::HConvexImageFilter<DCMImageType, DCMImageType> ConvexFilterType;
 typedef itk::RescaleIntensityImageFilter<DCMImageType, DCMImageType> RescaleIntensityFilterType;
 typedef itk::CastImageFilter<DCMImageType, EightBitImageType> DCMToBinaryCastFilterType;
