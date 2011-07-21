@@ -26,6 +26,7 @@
 #include "itkConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 #include "itkImageRegionConstIteratorWithIndex.h"
+//#include "itkMultiResolutionPyramidImageFilter.h"
 #include "itkResampleImageFilter.h"
 #include "itkAffineTransform.h"
 #include "itkNearestNeighborInterpolateImageFunction.h"
@@ -81,11 +82,9 @@ typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> WriterType;
 // Labeled file series writer types (from RelabelComponentImageFilter)
 typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> RawWriterType;
 
-/*
 // Mask writer types
 typedef itk::OrientedImage<EightBitPixelType, 2> MaskOutputImageType;
 typedef itk::ImageSeriesWriter<EightBitImageType, MaskOutputImageType> MaskWriterType;
-*/
 
 // function definitions
 //void printCentroids(RelabelFilterType::Pointer);

@@ -17,7 +17,9 @@ def getCentroids(data, centroid_ids):
     obstotals = np.zeros(max(centroid_ids)) # running count of observations in each cluster
     for i in range(0, len(data)):
         xyztotals[centroid_ids[i] - 1] += data[i]
+        print xyztotals
         obstotals[centroid_ids[i] - 1] += 1
+        print obstotals
     for i in range(0, len(centroids)):
         centroids[i] = xyztotals[i] / obstotals[i]
     return sorted(np.round(centroids).astype(int), key = lambda x: x[2])
@@ -28,7 +30,7 @@ if len(sys.argv) != 2:
 
 data = np.loadtxt(sys.argv[1], usecols = (0, 1, 2))
 
-clusters = fclusterdata(data, 50, criterion='maxclust')
+clusters = fclusterdata(data, 50, criterion='maxclust')	#clusters data in the matrix data with a threshold of 50 - uses the maxclust method which ensures that the max distance between two clusters is r
 #clusters = linkage(data)
 
 centroids = getCentroids(data, clusters)
