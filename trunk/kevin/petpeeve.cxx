@@ -1,3 +1,4 @@
+// Automated tumor detection in PET images
 // Kevin Zhang
 // Bria Connolly
 
@@ -154,9 +155,8 @@ int main(int argc, char* argv[])
     //LongToDCMFilter->SetInput(CCFilter->GetOutput());
 
     // Convert back to DCM pixel type
-    // CHANGE INPUT TO LAST FILTER USED
-    //FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
-    //FloatToDCMFilter->SetInput(LoGFilter->GetOutput());
+    FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
+    FloatToDCMFilter->SetInput(LoGFilter->GetOutput());
 
     // Convert from eight-bit to DCM pixel type
     //EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
@@ -186,30 +186,28 @@ int main(int argc, char* argv[])
     }
     std::cerr << "Output files successfully written." << std::endl;
 
-    /*
-    // Write labeled output files
+    // Write raw output files
     // Set up FileSeriesWriter for masks
-    LabeledWriterType::Pointer LabeledWriter = LabeledWriterType::New();
-    LabeledWriter->SetInput(CCFilter->GetOutput());
-    LabeledWriter->SetImageIO(dcmIO);
-    const char * LabeledOutputDirectory = argv[3];
-    itksys::SystemTools::MakeDirectory(LabeledOutputDirectory);
-    nameGenerator->SetOutputDirectory(LabeledOutputDirectory);
-    LabeledWriter->SetFileNames(nameGenerator->GetOutputFileNames());
-    LabeledWriter->SetMetaDataDictionaryArray(reader->GetMetaDataDictionaryArray());
+    RawWriterType::Pointer RawWriter = RawWriterType::New();
+    RawWriter->SetInput(FloatToDCMFilter->GetOutput());
+    RawWriter->SetImageIO(dcmIO);
+    const char * RawOutputDirectory = argv[3];
+    itksys::SystemTools::MakeDirectory(RawOutputDirectory);
+    nameGenerator->SetOutputDirectory(RawOutputDirectory);
+    RawWriter->SetFileNames(nameGenerator->GetOutputFileNames());
+    RawWriter->SetMetaDataDictionaryArray(reader->GetMetaDataDictionaryArray());
 
     try
     {
-        LabeledWriter->Update();
+        RawWriter->Update();
     }
     catch (itk::ExceptionObject & e)
     {
-        std::cerr << "Exception caught in LabeledWriter." << std::endl;
+        std::cerr << "Exception caught in RawWriter." << std::endl;
         std::cerr << e << std::endl;
         return -1;
     }
     std::cerr << "Relabeled files successfully written." << std::endl;
-    */
 
     return 0;
 

@@ -79,7 +79,7 @@ typedef itk::OrientedImage<EightBitPixelType, 2> BinaryOutputImageType;
 typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> WriterType;
 
 // Labeled file series writer types (from RelabelComponentImageFilter)
-typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> LabeledWriterType;
+typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> RawWriterType;
 
 /*
 // Mask writer types
