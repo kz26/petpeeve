@@ -50,11 +50,11 @@ coord_sets = [set(x) for x in coord_lists]
 finalcoords = set.intersection(*coord_sets)
 
 # Method 2: Keep every coordinate in the first set that is not in any other set
-#coord_sets = [set(x) for x in coord_lists[1:]]
-#coords_union = set.union(*coord_sets)
-#finalcoords = coord_lists[0]
-#for coord in coords_union:
-#    finalcoords = [x for x in finalcoords if x != coord]
+coord_sets = [set(x) for x in coord_lists[1:]]
+coords_union = set.union(*coord_sets)
+finalcoords = coord_lists[0]
+for coord in coords_union:
+    finalcoords = [x for x in finalcoords if x != coord]
 
 #Method 3: Keep every coordinate that is in at least two sets
 #finalcoords = []
@@ -79,7 +79,6 @@ finalcoords = set.intersection(*coord_sets)
 #            count += 1
 #    if count == 1:
 #       finalcoords4 = [x for x in finalcoords4 if x != coord]
-
 #finalcoords = set.intersection(set(finalcoords), set(finalcoords4))
 
 

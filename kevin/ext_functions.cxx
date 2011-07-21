@@ -15,8 +15,8 @@ int round(float num)
 // imported from 2009_11_06_CandidateFinder_adaptive_best
 void printCentroids(RelabelFilterType::Pointer RelabelFilter)
 {
-    InputImageType::RegionType InputRegion;
-    InputImageType::RegionType::IndexType InputStart;
+    DCMImageType::RegionType InputRegion;
+    DCMImageType::RegionType::IndexType InputStart;
 
     InputStart[0] = 0;
     InputStart[1] = 0;
@@ -25,7 +25,7 @@ void printCentroids(RelabelFilterType::Pointer RelabelFilter)
     InputRegion.SetSize(RelabelFilter->GetOutput()->GetRequestedRegion().GetSize() );
     InputRegion.SetIndex(InputStart);
 
-    typedef itk::ImageRegionConstIteratorWithIndex<LongImageType> ConstIteratorWithIndexType;
+    typedef itk::ImageRegionConstIteratorWithIndex<DCMImageType> ConstIteratorWithIndexType;
     ConstIteratorWithIndexType InputIterator(RelabelFilter->GetOutput(), InputRegion);
 
     float centroids[RelabelFilter->GetNumberOfObjects()][3]; // array to store centroid coordinates
@@ -56,18 +56,19 @@ void printCentroids(RelabelFilterType::Pointer RelabelFilter)
     {
         // i[0] = col, i[1] = row, i[2] = slice according to the ITK docs
         // i[1], i[0], i[2] row, col, slice will be considered the standard output format
-        if(objsizes[i] <= 20)
+        //if(objsizes[i] <= 20)
             std::cout << round(centroids[i][1]) << " " << round(centroids[i][0]) << " " << round(centroids[i][2]) << " " << objsizes[i] << std::endl;
     }
 
 }
 
-InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, int levels, int threads)
+/*
+FloatImageType::Pointer makeSRGPyramidImage(FloatImageType::Pointer inputimage, int levels, int threads)
 {
     // Set level
     int real_level = min(levels, 3);
     // Set up resample filter
-    typedef itk::ResampleImageFilter<InputImageType, InputImageType> ResampleImageFilterType;
+    typedef itk::ResampleImageFilter<FloatImageType, FloatImageType> ResampleImageFilterType;
     ResampleImageFilterType::Pointer ResampleImageFilter = ResampleImageFilterType::New();
 
     // Set up affine transform
@@ -77,21 +78,21 @@ InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, 
     ResampleImageFilter->SetTransform(Transform);
 
     // Set up interpolator
-    typedef itk::LinearInterpolateImageFunction<InputImageType, double> InterpolatorType;
+    typedef itk::LinearInterpolateImageFunction<FloatImageType, double> InterpolatorType;
     InterpolatorType::Pointer Interpolator = InterpolatorType::New();
     ResampleImageFilter->SetInterpolator(Interpolator);
     
     // Set parameters
     ResampleImageFilter->SetDefaultPixelValue(0);
     //double spacing[3] = {1.0, 1.0, 1.0};
-    const InputImageType::SpacingType origspacing = inputimage->GetSpacing();
-    InputImageType::SpacingType newspacing;
+    const FloatImageType::SpacingType origspacing = inputimage->GetSpacing();
+    FloatImageType::SpacingType newspacing;
     ResampleImageFilter->SetOutputSpacing(newspacing);
     ResampleImageFilter->SetOutputOrigin(inputimage->GetOrigin());
     ResampleImageFilter->SetOutputDirection(inputimage->GetDirection());
     ResampleImageFilter->SetNumberOfThreads(threads);
-    const InputImageType::SizeType origsize = inputimage->GetLargestPossibleRegion().GetSize();
-    InputImageType::SizeType newsize;
+    const FloatImageType::SizeType origsize = inputimage->GetLargestPossibleRegion().GetSize();
+    FloatImageType::SizeType newsize;
     for (int i = 0; i < 3; i++)
     {
         newsize[i] = origsize[i];
@@ -101,9 +102,9 @@ InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, 
     RGFilterType::Pointer RGFilter = RGFilterType::New();
     RGFilter->SetNormalizeAcrossScale(false);
     RGFilter->SetNumberOfThreads(threads);
-    int starting_sigma = 5;
+    int starting_sigma = 6;
 
-    InputImageType::Pointer myimage = inputimage;
+    FloatImageType::Pointer myimage = inputimage;
     for(int i = 0; i < real_level; i++)
     {
         RGFilter->SetSigma(starting_sigma);
@@ -121,10 +122,11 @@ InputImageType::Pointer makeSRGPyramidImage(InputImageType::Pointer inputimage, 
         myimage = ResampleImageFilter->GetOutput();
         myimage->DisconnectPipeline();
 
-        starting_sigma++;
-        //const InputImageType::SizeType mysize = myimage->GetLargestPossibleRegion().GetSize();
+        //starting_sigma += 2;
+        //const FloatImageType::SizeType mysize = myimage->GetLargestPossibleRegion().GetSize();
         //std::cout << mysize[0] << " " << mysize[1] << " " << mysize[2] << std::endl;
     }
     return myimage;
 }
 
+*/

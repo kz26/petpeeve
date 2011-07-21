@@ -40,41 +40,45 @@
 typedef signed short DCMPixelType;
 typedef unsigned char EightBitPixelType;
 typedef signed short LongPixelType;
+typedef float FloatPixelType;
 
-typedef itk::OrientedImage<DCMPixelType, 3> InputImageType;
+typedef itk::OrientedImage<DCMPixelType, 3> DCMImageType;
 typedef itk::OrientedImage<EightBitPixelType, 3> EightBitImageType;
 typedef itk::OrientedImage<LongPixelType, 3> LongImageType;
+typedef itk::OrientedImage<FloatPixelType, 3> FloatImageType;
 
-typedef itk::ImageSeriesReader<InputImageType> ReaderType;
+typedef itk::ImageSeriesReader<DCMImageType> ReaderType;
 typedef itk::GDCMImageIO ImageIOType;
 typedef itk::GDCMSeriesFileNames NamesGeneratorType;
 
 typedef std::vector<std::string> FileNamesContainer;
 
-typedef itk::OtsuThresholdImageFilter<InputImageType, EightBitImageType> OtsuFilterType;
+typedef itk::CastImageFilter<DCMImageType, FloatImageType> DCMToFloatFilterType;
+typedef itk::CastImageFilter<FloatImageType, DCMImageType> FloatToDCMFilterType;
+typedef itk::CastImageFilter<LongImageType, DCMImageType> LongToDCMFilterType;
+
+typedef itk::OtsuThresholdImageFilter<FloatImageType, EightBitImageType> OtsuFilterType;
 typedef itk::BinaryBallStructuringElement<EightBitPixelType, 3> BBStructuringElementBinType;
 typedef itk::BinaryErodeImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> ErodeFilterType;
 typedef itk::BinaryDilateImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> DilateFilterType;
-typedef itk::MaskNegatedImageFilter<InputImageType, EightBitImageType, InputImageType> MaskFilterType;
-//typedef itk::MedianImageFilter<InputImageType, InputImageType> MedianFilterType;
-typedef itk::SmoothingRecursiveGaussianImageFilter<InputImageType, InputImageType> RGFilterType;
-//typedef itk::MultiResolutionPyramidImageFilter<InputImageType, InputImageType> MultiresFilterType;
-typedef itk::HConvexImageFilter<InputImageType, InputImageType> ConvexFilterType;
-typedef itk::RescaleIntensityImageFilter<InputImageType, InputImageType> RescaleIntensityFilterType;
-typedef itk::CastImageFilter<InputImageType, EightBitImageType> DCMToBinaryCastFilterType;
+typedef itk::MaskNegatedImageFilter<FloatImageType, EightBitImageType, FloatImageType> MaskFilterType;
+typedef itk::SmoothingRecursiveGaussianImageFilter<FloatImageType, FloatImageType> RGFilterType;
+typedef itk::HConvexImageFilter<DCMImageType, DCMImageType> ConvexFilterType;
+typedef itk::RescaleIntensityImageFilter<DCMImageType, DCMImageType> RescaleIntensityFilterType;
+typedef itk::CastImageFilter<DCMImageType, EightBitImageType> DCMToBinaryCastFilterType;
 typedef itk::ThresholdImageFilter<EightBitImageType> EightBitThresholdFilterType;
-typedef itk::ThresholdImageFilter<InputImageType> ThresholdFilterType;
-typedef itk::BinaryThresholdImageFilter<EightBitImageType, EightBitImageType> BinaryThresholdFilterType;
-typedef itk::ConnectedComponentImageFilter<EightBitImageType, LongImageType, EightBitImageType> CCFilterType;
-typedef itk::RelabelComponentImageFilter<LongImageType, LongImageType> RelabelFilterType;
+typedef itk::ThresholdImageFilter<FloatImageType> ThresholdFilterType;
+typedef itk::BinaryThresholdImageFilter<FloatImageType, EightBitImageType> BinaryThresholdFilterType;
+typedef itk::ConnectedComponentImageFilter<EightBitImageType, DCMImageType, EightBitImageType> CCFilterType;
+typedef itk::RelabelComponentImageFilter<DCMImageType, DCMImageType> RelabelFilterType;
 
 // File series writer types
-typedef itk::OrientedImage<EightBitPixelType, 2> OutputImageType;
+typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
 typedef itk::OrientedImage<EightBitPixelType, 2> BinaryOutputImageType;
-typedef itk::ImageSeriesWriter<EightBitImageType, OutputImageType> WriterType;
+typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> WriterType;
 
 // Labeled file series writer types (from RelabelComponentImageFilter)
-typedef itk::ImageSeriesWriter<InputImageType, OutputImageType> LabeledWriterType;
+typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> LabeledWriterType;
 
 /*
 // Mask writer types
