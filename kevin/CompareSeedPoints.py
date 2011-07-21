@@ -32,7 +32,7 @@ for row1 in f1data:
         diff = row1 - row2
         diff2 = [math.pow(i, 2) for i in diff[:2]]
         #if abs(np.min(diff)) <= threshold and abs(np.max(diff)) <= threshold:
-        if  math.sqrt(np.sum(diff2)) <= threshold and abs(diff[2]) <= threshold:
+        if  math.sqrt(np.sum(diff2)) <= threshold and abs(diff[2]) <= 4: # must be within 4 slices
             print "    ",
             print row2
             counter[cindex] = 1

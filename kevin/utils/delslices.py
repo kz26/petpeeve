@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copies a directory of PET slices to a new directory and deletes the last n slices
+# Copies a directory of PET slices to a new directory and deletes the first n slices and the last n slices
 # Arguments input_dir, output_dir, num_slices_to_delete
 # Assumes all the slice files are named consistently in ascending order
 
@@ -17,7 +17,12 @@ if os.path.exists(outputdir):
     shutil.rmtree(outputdir)
 shutil.copytree(inputdir, outputdir)
 os.chdir(outputdir)
-files = os.listdir(".")
-for f in sorted(files)[-numslices:]:
+files = sorted(os.listdir("."))
+
+for f in files[:numslices]:
+    os.remove(f)
+    print "Deleted %s" % (f)
+
+for f in files[-numslices:]:
     os.remove(f)
     print "Deleted %s" % (f)

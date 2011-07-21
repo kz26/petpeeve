@@ -1,6 +1,5 @@
 // Kevin Zhang
 // Bria Connolly
-// Last update: 07/20/2011
 
 #include "itktypes.h"
 #include "ext_functions.h"
@@ -79,27 +78,36 @@ int main(int argc, char* argv[])
     //MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
     MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
 
+    /*
     // Apply recursive Gaussian blur
     RGFilterType::Pointer RGFilter = RGFilterType::New();
     RGFilter->SetNormalizeAcrossScale(false);
     RGFilter->SetSigma(sigma);
     RGFilter->SetNumberOfThreads(num_threads);
     RGFilter->SetInput(MaskFilter->GetOutput());
+    */
 
+    // Apply LoG
+    LoGFilterType::Pointer LoGFilter = LoGFilterType::New();
+    LoGFilter->SetSigma(sigma);
+    LoGFilter->SetInput(MaskFilter->GetOutput());
+
+    /*
     // Apply 50% thresholding
     ThresholdFilterType::Pointer Threshold50Filter = ThresholdFilterType::New();
     Threshold50Filter->SetOutsideValue(0);
     Threshold50Filter->ThresholdBelow(7000);
     Threshold50Filter->SetNumberOfThreads(num_threads);
-    Threshold50Filter->SetInput(RGFilter->GetOutput());
+    Threshold50Filter->SetInput(LoGFilter->GetOutput());
+    */
 
-    // Convert to binary
+    // Apply thresholding and convert to binary
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
     BinaryThresholdFilter->SetInsideValue(255);
     BinaryThresholdFilter->SetOutsideValue(0);
-    BinaryThresholdFilter->SetLowerThreshold(1);
-    BinaryThresholdFilter->SetUpperThreshold(65536);
-    BinaryThresholdFilter->SetInput(Threshold50Filter->GetOutput());
+    BinaryThresholdFilter->SetLowerThreshold(-65536);
+    BinaryThresholdFilter->SetUpperThreshold(-70);
+    BinaryThresholdFilter->SetInput(LoGFilter->GetOutput());
 
     //MaskFilter->Update();
     //DCMImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), level, num_threads);
@@ -112,32 +120,6 @@ int main(int argc, char* argv[])
     //ConvexFilter->FullyConnectedOn();
     //ConvexFilter->SetInput(RGFilter->GetOutput());
     ConvexFilter->SetInput(MultiImage);
-
-    // Rescale image intensity
-    RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
-    RescaleIntensityFilter->SetOutputMinimum(0);
-    RescaleIntensityFilter->SetOutputMaximum(255);
-    RescaleIntensityFilter->SetNumberOfThreads(num_threads);
-    RescaleIntensityFilter->SetInput(ConvexFilter->GetOutput());
-
-    // Cast image to unsigned pixel type
-    DCMToBinaryCastFilterType::Pointer DCMToBinaryCastFilter = DCMToBinaryCastFilterType::New();
-    DCMToBinaryCastFilter->SetInput(RescaleIntensityFilter->GetOutput());
-
-    // Apply threshold filter
-    EightBitThresholdFilterType::Pointer EightBitThresholdFilter = EightBitThresholdFilterType::New();
-    EightBitThresholdFilter->SetOutsideValue(0);
-    EightBitThresholdFilter->ThresholdBelow(128);
-    EightBitThresholdFilter->SetInput(DCMToBinaryCastFilter->GetOutput());
-    EightBitThresholdFilter->SetNumberOfThreads(num_threads);
-
-    // Apply binary threshold filter
-    BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
-    BinaryThresholdFilter->SetInsideValue(255);
-    BinaryThresholdFilter->SetOutsideValue(0);
-    BinaryThresholdFilter->SetLowerThreshold(1);
-    BinaryThresholdFilter->SetUpperThreshold(255);
-    BinaryThresholdFilter->SetInput(EightBitThresholdFilter->GetOutput());
     */
 
     CCFilterType::Pointer CCFilter = CCFilterType::New();
@@ -146,35 +128,20 @@ int main(int argc, char* argv[])
     CCFilter->SetMaskImage(BinaryThresholdFilter->GetOutput());
     //CCFilter->FullyConnectedOn();
     
-    unsigned int min_object_size = 25;
+    unsigned int min_object_size = 10;
     // Relabel component filter
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
     RelabelFilter->SetNumberOfThreads(num_threads);
-    //RelabelFilter->SetMinimumObjectSize(min_object_size);
+    RelabelFilter->SetMinimumObjectSize(min_object_size);
 
-
-    /*
-    typedef std::vector<unsigned long> SizesInPixelsType;
-    const SizesInPixelsType & sizesInPixels = RelabelFilter->GetSizeOfObjectsInPixels();
-    SizesInPixelsType::const_iterator sizeItr = sizesInPixels.begin();
-    SizesInPixelsType::const_iterator sizeEnd = sizesInPixels.end();
-    unsigned int objnum = 0;
-    while(sizeItr != sizeEnd)
-    {
-        std::cerr << "Size of object #" << objnum << ": " << *sizeItr << std::endl;
-        objnum++;
-        sizeItr++;
-    }
-    */
-    
     RelabelFilter->Update();
     printCentroids(RelabelFilter);
     unsigned int numobjects = RelabelFilter->GetOriginalNumberOfObjects();
     std::cerr << "Minimum size threshold: " << min_object_size << std::endl;
     std::cerr << "Number of objects detected (all): " << numobjects << std::endl;
     std::cerr << "Number of objects detected (within min size threshold): " << RelabelFilter->GetNumberOfObjects() << std::endl;
-
+    
     // Rescale image intensity
     RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
     RescaleIntensityFilter->SetOutputMinimum(0);
@@ -189,7 +156,11 @@ int main(int argc, char* argv[])
     // Convert back to DCM pixel type
     // CHANGE INPUT TO LAST FILTER USED
     //FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
-    //FloatToDCMFilter->SetInput(RescaleIntensityFilter->GetOutput());
+    //FloatToDCMFilter->SetInput(LoGFilter->GetOutput());
+
+    // Convert from eight-bit to DCM pixel type
+    //EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
+    //EightBitToDCMFilter->SetInput(BinaryThresholdFilter->GetOutput());
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
