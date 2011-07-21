@@ -25,6 +25,7 @@ for f in sorted(files):
     for row in range(0, ds.pixel_array.shape[0]):
         for col in range(0, ds.pixel_array.shape[1]):
             label = int(ds.pixel_array[row][col])
+            if label == 0: continue
             if label not in data.keys():
                 data[label] = []
             point = (int(row), int(col), int(fnmatch.group(1)))

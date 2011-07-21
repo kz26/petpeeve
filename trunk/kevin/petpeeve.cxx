@@ -1,6 +1,6 @@
 // Kevin Zhang
 // Bria Connolly
-// Last update: 07/19/2011
+// Last update: 07/20/2011
 
 #include "itktypes.h"
 #include "ext_functions.h"
@@ -10,19 +10,19 @@ int main(int argc, char* argv[])
 
     if (argc < 4)
     {
-	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dir num_levels [# threads]" << std::endl;
+	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dir sigma [# threads]" << std::endl;
         return -1;
     }	
 
-    int level = atoi(argv[3]);
+    int sigma = atoi(argv[3]);
     int num_threads;
     if (argc == 5)
         num_threads = atoi(argv[4]);
     else
         num_threads = 1;
-    //std::cout << "Number of args: " << argc << std::endl;
-    std::cout << "Number of threads: " << num_threads << std::endl;
-    std::cout << "Number of multiscale levels: " << level << std::endl;
+    //std::cerr << "Number of args: " << argc << std::endl;
+    std::cerr << "Number of threads: " << num_threads << std::endl;
+    std::cerr << "Sigma value: " << sigma << std::endl;
 
     ReaderType::Pointer reader = ReaderType::New();
 
@@ -47,9 +47,13 @@ int main(int argc, char* argv[])
         return -1;
     }   
 
+    // Cast images to float pixel type
+    DCMToFloatFilterType::Pointer DCMToFloatFilter = DCMToFloatFilterType::New();
+    DCMToFloatFilter->SetInput(reader->GetOutput());
+
     // begin Otsu filter
     OtsuFilterType::Pointer OtsuFilter = OtsuFilterType::New();
-    OtsuFilter->SetInput(reader->GetOutput());
+    OtsuFilter->SetInput(DCMToFloatFilter->GetOutput());
 
     // Initialize structuring element (binary)
     BBStructuringElementBinType BBStructuringElementBin;
@@ -69,53 +73,41 @@ int main(int argc, char* argv[])
     BinaryDilateFilter->SetDilateValue(255);
     BinaryDilateFilter->SetInput(BinaryErodeFilter->GetOutput());
 
-    /*
-    EightBitImageType::Pointer BDOutputImage = OtsuFilter->GetOutput();
-    for(int i = 0; i < 1; i++)
-    {
-        BinaryDilateFilter->SetInput(BDOutputImage);
-        BinaryDilateFilter->Update();
-        BDOutputImage = BinaryDilateFilter->GetOutput();
-        BDOutputImage->DisconnectPipeline();
-    }
-    */
-
     // Apply mask
     MaskFilterType::Pointer MaskFilter = MaskFilterType::New();
-    MaskFilter->SetInput1(reader->GetOutput());
+    MaskFilter->SetInput1(DCMToFloatFilter->GetOutput());
     //MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
     MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
 
-    /*
     // Apply recursive Gaussian blur
     RGFilterType::Pointer RGFilter = RGFilterType::New();
     RGFilter->SetNormalizeAcrossScale(false);
     RGFilter->SetSigma(sigma);
     RGFilter->SetNumberOfThreads(num_threads);
     RGFilter->SetInput(MaskFilter->GetOutput());
-    */
 
+    // Apply 50% thresholding
+    ThresholdFilterType::Pointer Threshold50Filter = ThresholdFilterType::New();
+    Threshold50Filter->SetOutsideValue(0);
+    Threshold50Filter->ThresholdBelow(7000);
+    Threshold50Filter->SetNumberOfThreads(num_threads);
+    Threshold50Filter->SetInput(RGFilter->GetOutput());
+
+    // Convert to binary
+    BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
+    BinaryThresholdFilter->SetInsideValue(255);
+    BinaryThresholdFilter->SetOutsideValue(0);
+    BinaryThresholdFilter->SetLowerThreshold(1);
+    BinaryThresholdFilter->SetUpperThreshold(65536);
+    BinaryThresholdFilter->SetInput(Threshold50Filter->GetOutput());
+
+    //MaskFilter->Update();
+    //DCMImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), level, num_threads);
+    
     /*
-    // Multiresolution pyramid filter
-    MultiresFilterType::Pointer MultiresFilter = MultiresFilterType::New();
-    itk::Array2D<unsigned int> factors(2, 3);
-    factors(0, 0) = 4;
-    factors(0, 1) = 4;
-    factors(0, 2) = 1;
-    factors(1, 0) = 2;
-    factors(1, 1) = 2;
-    factors(1, 2) = 1;
-
-    MultiresFilter->SetInput(MaskFilter->GetOutput());
-    MultiresFilter->SetNumberOfThreads(num_threads);
-    MultiresFilter->SetSchedule(factors);
-    */
-
-    MaskFilter->Update();
-    InputImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), level, num_threads);
     // Apply convex image filter
     ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(240);
+    ConvexFilter->SetHeight(100);
     ConvexFilter->SetNumberOfThreads(num_threads);
     //ConvexFilter->FullyConnectedOn();
     //ConvexFilter->SetInput(RGFilter->GetOutput());
@@ -146,21 +138,21 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->SetLowerThreshold(1);
     BinaryThresholdFilter->SetUpperThreshold(255);
     BinaryThresholdFilter->SetInput(EightBitThresholdFilter->GetOutput());
+    */
 
-    // Connected component filter
     CCFilterType::Pointer CCFilter = CCFilterType::New();
     CCFilter->SetNumberOfThreads(num_threads);
     CCFilter->SetInput(BinaryThresholdFilter->GetOutput());
     CCFilter->SetMaskImage(BinaryThresholdFilter->GetOutput());
     //CCFilter->FullyConnectedOn();
-
+    
+    unsigned int min_object_size = 25;
     // Relabel component filter
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
     RelabelFilter->SetNumberOfThreads(num_threads);
-    //RelabelFilter->SetMinimumObjectSize(2);
+    //RelabelFilter->SetMinimumObjectSize(min_object_size);
 
-    RelabelFilter->Update();
 
     /*
     typedef std::vector<unsigned long> SizesInPixelsType;
@@ -170,21 +162,39 @@ int main(int argc, char* argv[])
     unsigned int objnum = 0;
     while(sizeItr != sizeEnd)
     {
-        std::cout << "Size of object #" << objnum << ": " << *sizeItr << std::endl;
+        std::cerr << "Size of object #" << objnum << ": " << *sizeItr << std::endl;
         objnum++;
         sizeItr++;
     }
     */
-
+    
+    RelabelFilter->Update();
     printCentroids(RelabelFilter);
-    std::cout << "Number of objects detected (all): " << RelabelFilter->GetOriginalNumberOfObjects() << std::endl;
-    std::cout << "Number of objects detected (within min size threshold): " << RelabelFilter->GetNumberOfObjects() << std::endl;
+    unsigned int numobjects = RelabelFilter->GetOriginalNumberOfObjects();
+    std::cerr << "Minimum size threshold: " << min_object_size << std::endl;
+    std::cerr << "Number of objects detected (all): " << numobjects << std::endl;
+    std::cerr << "Number of objects detected (within min size threshold): " << RelabelFilter->GetNumberOfObjects() << std::endl;
+
+    // Rescale image intensity
+    RescaleIntensityFilterType::Pointer RescaleIntensityFilter = RescaleIntensityFilterType::New();
+    RescaleIntensityFilter->SetOutputMinimum(0);
+    RescaleIntensityFilter->SetOutputMaximum(1000);
+    RescaleIntensityFilter->SetNumberOfThreads(num_threads);
+    RescaleIntensityFilter->SetInput(RelabelFilter->GetOutput());
+
+    // Convert from long to DCM pixel type
+    //LongToDCMFilterType::Pointer LongToDCMFilter = LongToDCMFilterType::New();
+    //LongToDCMFilter->SetInput(CCFilter->GetOutput());
+
+    // Convert back to DCM pixel type
+    // CHANGE INPUT TO LAST FILTER USED
+    //FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
+    //FloatToDCMFilter->SetInput(RescaleIntensityFilter->GetOutput());
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
     WriterType::Pointer writer = WriterType::New();
-    // CHANGE INPUT TO LAST FILTER USED
-    writer->SetInput(EightBitThresholdFilter->GetOutput());
+    writer->SetInput(RescaleIntensityFilter->GetOutput());
     //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
@@ -203,7 +213,7 @@ int main(int argc, char* argv[])
 	    std::cerr << e << std::endl;
 	    return -1;
     }
-    std::cout << "Output files successfully written." << std::endl;
+    std::cerr << "Output files successfully written." << std::endl;
 
     /*
     // Write labeled output files
@@ -227,7 +237,7 @@ int main(int argc, char* argv[])
         std::cerr << e << std::endl;
         return -1;
     }
-    std::cout << "Relabeled files successfully written." << std::endl;
+    std::cerr << "Relabeled files successfully written." << std::endl;
     */
 
     return 0;
