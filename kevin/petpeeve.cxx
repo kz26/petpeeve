@@ -94,6 +94,15 @@ int main(int argc, char* argv[])
     LoGFilter->SetInput(MaskFilter->GetOutput());
 
     /*
+    // Rescale image intensity
+    FloatRescaleIntensityFilterType::Pointer LoGRescaleIntensityFilter = FloatRescaleIntensityFilterType::New();
+    LoGRescaleIntensityFilter->SetOutputMinimum(-1000);
+    LoGRescaleIntensityFilter->SetOutputMaximum(1000);
+    LoGRescaleIntensityFilter->SetNumberOfThreads(num_threads);
+    LoGRescaleIntensityFilter->SetInput(LoGFilter->GetOutput());
+    */
+
+    /*
     // Apply 50% thresholding
     ThresholdFilterType::Pointer Threshold50Filter = ThresholdFilterType::New();
     Threshold50Filter->SetOutsideValue(0);
@@ -129,7 +138,7 @@ int main(int argc, char* argv[])
     CCFilter->SetMaskImage(BinaryThresholdFilter->GetOutput());
     //CCFilter->FullyConnectedOn();
     
-    unsigned int min_object_size = 10;
+    unsigned int min_object_size = 5;
     // Relabel component filter
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
@@ -158,12 +167,14 @@ int main(int argc, char* argv[])
     FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
     FloatToDCMFilter->SetInput(LoGFilter->GetOutput());
 
+    /*
     // Rescale LoGFilter for output purposes
     RescaleIntensityFilterType::Pointer RescaleIntensityFilter2 = RescaleIntensityFilterType::New();
     RescaleIntensityFilter2->SetOutputMinimum(-1000);
     RescaleIntensityFilter2->SetOutputMaximum(1000);
     RescaleIntensityFilter2->SetNumberOfThreads(num_threads);
     RescaleIntensityFilter2->SetInput(FloatToDCMFilter->GetOutput());
+    */
 
     // Convert from eight-bit to DCM pixel type
     //EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
@@ -196,7 +207,7 @@ int main(int argc, char* argv[])
     // Write raw output files
     // Set up FileSeriesWriter for masks
     RawWriterType::Pointer RawWriter = RawWriterType::New();
-    RawWriter->SetInput(RescaleIntensityFilter2->GetOutput());
+    RawWriter->SetInput(FloatToDCMFilter->GetOutput());
     RawWriter->SetImageIO(dcmIO);
     const char * RawOutputDirectory = argv[3];
     itksys::SystemTools::MakeDirectory(RawOutputDirectory);
