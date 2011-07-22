@@ -8,16 +8,16 @@
 int main(int argc, char* argv[])
 {
 
-    if (argc < 4)
+    if (argc < 5)
     {
-	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dir sigma [# threads]" << std::endl;
+	    std::cerr << "Usage: " <<  argv[0] << " input_dcm_directory output_dir raw_output_dir sigma [# threads]" << std::endl;
         return -1;
     }	
 
-    int sigma = atoi(argv[3]);
+    int sigma = atoi(argv[4]);
     int num_threads;
-    if (argc == 5)
-        num_threads = atoi(argv[4]);
+    if (argc == 6)
+        num_threads = atoi(argv[5]);
     else
         num_threads = 1;
     //std::cerr << "Number of args: " << argc << std::endl;
@@ -158,6 +158,13 @@ int main(int argc, char* argv[])
     FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
     FloatToDCMFilter->SetInput(LoGFilter->GetOutput());
 
+    // Rescale LoGFilter for output purposes
+    RescaleIntensityFilterType::Pointer RescaleIntensityFilter2 = RescaleIntensityFilterType::New();
+    RescaleIntensityFilter2->SetOutputMinimum(-1000);
+    RescaleIntensityFilter2->SetOutputMaximum(1000);
+    RescaleIntensityFilter2->SetNumberOfThreads(num_threads);
+    RescaleIntensityFilter2->SetInput(FloatToDCMFilter->GetOutput());
+
     // Convert from eight-bit to DCM pixel type
     //EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
     //EightBitToDCMFilter->SetInput(BinaryThresholdFilter->GetOutput());
@@ -189,7 +196,7 @@ int main(int argc, char* argv[])
     // Write raw output files
     // Set up FileSeriesWriter for masks
     RawWriterType::Pointer RawWriter = RawWriterType::New();
-    RawWriter->SetInput(FloatToDCMFilter->GetOutput());
+    RawWriter->SetInput(RescaleIntensityFilter2->GetOutput());
     RawWriter->SetImageIO(dcmIO);
     const char * RawOutputDirectory = argv[3];
     itksys::SystemTools::MakeDirectory(RawOutputDirectory);
