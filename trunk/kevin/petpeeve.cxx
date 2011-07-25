@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->SetInsideValue(255);
     BinaryThresholdFilter->SetOutsideValue(0);
     BinaryThresholdFilter->SetLowerThreshold(-65536);
-    BinaryThresholdFilter->SetUpperThreshold(-70);
+    BinaryThresholdFilter->SetUpperThreshold(-65);
     BinaryThresholdFilter->SetInput(LoGFilter->GetOutput());
 
     // Secondary binary dilation step
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
     RelabelFilter->SetNumberOfThreads(num_threads);
-    //RelabelFilter->SetMinimumObjectSize(min_object_size);
+    RelabelFilter->SetMinimumObjectSize(min_object_size);
 
     RelabelFilter->Update();
     printCentroids(RelabelFilter);
