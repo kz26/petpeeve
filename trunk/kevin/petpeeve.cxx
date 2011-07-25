@@ -119,6 +119,13 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->SetUpperThreshold(-70);
     BinaryThresholdFilter->SetInput(LoGFilter->GetOutput());
 
+    // Secondary binary dilation step
+    BBStructuringElementBin.SetRadius(1);
+    DilateFilterType::Pointer BinaryDilateFilter2 = DilateFilterType::New();
+    BinaryDilateFilter2->SetKernel(BBStructuringElementBin);
+    BinaryDilateFilter2->SetDilateValue(255);
+    BinaryDilateFilter2->SetInput(BinaryThresholdFilter->GetOutput());
+
     //MaskFilter->Update();
     //DCMImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), level, num_threads);
     
@@ -134,8 +141,8 @@ int main(int argc, char* argv[])
 
     CCFilterType::Pointer CCFilter = CCFilterType::New();
     CCFilter->SetNumberOfThreads(num_threads);
-    CCFilter->SetInput(BinaryThresholdFilter->GetOutput());
-    CCFilter->SetMaskImage(BinaryThresholdFilter->GetOutput());
+    CCFilter->SetInput(BinaryDilateFilter2->GetOutput());
+    CCFilter->SetMaskImage(BinaryDilateFilter2->GetOutput());
     //CCFilter->FullyConnectedOn();
     
     unsigned int min_object_size = 5;
@@ -143,7 +150,7 @@ int main(int argc, char* argv[])
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
     RelabelFilter->SetNumberOfThreads(num_threads);
-    RelabelFilter->SetMinimumObjectSize(min_object_size);
+    //RelabelFilter->SetMinimumObjectSize(min_object_size);
 
     RelabelFilter->Update();
     printCentroids(RelabelFilter);
@@ -177,13 +184,13 @@ int main(int argc, char* argv[])
     */
 
     // Convert from eight-bit to DCM pixel type
-    //EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
-    //EightBitToDCMFilter->SetInput(BinaryThresholdFilter->GetOutput());
+    EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
+    EightBitToDCMFilter->SetInput(BinaryDilateFilter2->GetOutput());
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
     WriterType::Pointer writer = WriterType::New();
-    writer->SetInput(RescaleIntensityFilter->GetOutput());
+    writer->SetInput(EightBitToDCMFilter->GetOutput());
     //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
