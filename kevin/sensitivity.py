@@ -27,12 +27,12 @@ with open(sys.argv[2], 'r') as f:
     for line in f:
         lm = linepat.match(line.rstrip())
         if not lm: continue
-        l = [int(x) for x in line.rstrip().split(" ")]
+        l = [int(x) for x in line.rstrip().split(" ")[:3]]
         points.append(tuple(l))
 
 for p in points:
     for label in objdata.keys():
-            if p[2] in objdata[label].keys() and (p[0], p[1]) in objdata[label][p[2]]:
+            if  p in objdata[label]:
                 objdata_count[label] += 1
 
 numerator = 0
@@ -41,7 +41,7 @@ for k in objdata_count.keys():
         numerator += 1
     else:
         print "Object not found: %s" % (k)
-        print objdata[k].keys()
+        print "    " + ", ".join(sorted(set([str(x[2]) for x in objdata[k]])))
 
 denominator = len(objdata_count.keys())
 sensitivity = round((float(numerator) / denominator) * 100, 2)
