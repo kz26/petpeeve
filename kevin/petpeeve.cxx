@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     CCFilter->SetMaskImage(BinaryDilateFilter2->GetOutput());
     //CCFilter->FullyConnectedOn();
     
-    unsigned int min_object_size = 5;
+    unsigned int min_object_size = 10;
     // Relabel component filter
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
