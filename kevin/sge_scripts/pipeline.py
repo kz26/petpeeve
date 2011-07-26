@@ -22,6 +22,10 @@ bindir = os.getcwd()
 if os.path.exists(sys.argv[2]): # clear output directory
     shutil.rmtree(sys.argv[2])
 
+if not os.path.exists(sys.argv[3]):
+    os.makedirs(sys.argv[3])
+
+
 for case in os.listdir(sys.argv[1]): # loop through PET directories
     casepath = os.path.join(sys.argv[1], case)
     for ab in os.listdir(casepath): # loop through before/after
