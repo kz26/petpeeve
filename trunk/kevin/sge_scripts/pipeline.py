@@ -50,8 +50,8 @@ for case in os.listdir(sys.argv[1]): # loop through PET directories
         f.write("%s/utils/delslices.py %s %s 2\n" % (bindir, os.path.join(subcasepath, "PT"), os.path.join(outputpath, "PT_trimmed")))
         f.write("%s/petpeeve %s %s %s %s %s > %s\n" % (bindir, os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_raw"), "5", "2", os.path.join(outputpath, "centroids.txt")))
         f.write("%s/utils/seedfix.py --offset %s %s > %s\n" % (bindir, os.path.join(outputpath, "centroids.txt"), os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "centroids-fixed.txt")))
-        f.write("%s/PointsInTumor.py %s %s > %s\n" % (bindir, os.path.join(outputpath, "centroids-fixed.txt"), os.path.join(subcasepath, "PT_manual_contours_bin"), os.path.join(outputpath, "points_in_tumor.txt")))
-        f.write("%s/CompareSeedPoints.py %s %s %s > %s\n" % (bindir, os.path.join(subcasepath, "seeds-fixed.txt"), os.path.join(outputpath, "centroids-fixed.txt"), "8", os.path.join(outputpath, "seed_compare.txt")))
+        #f.write("%s/PointsInTumor.py %s %s > %s\n" % (bindir, os.path.join(outputpath, "centroids-fixed.txt"), os.path.join(subcasepath, "PT_manual_contours_bin"), os.path.join(outputpath, "points_in_tumor.txt")))
+        #f.write("%s/CompareSeedPoints.py %s %s %s > %s\n" % (bindir, os.path.join(subcasepath, "seeds-fixed.txt"), os.path.join(outputpath, "centroids-fixed.txt"), "8", os.path.join(outputpath, "seed_compare.txt")))
         f.close()
 
 mf = open(sys.argv[4], 'w')

@@ -40,8 +40,8 @@ for k in objdata_count.keys():
     if objdata_count[k] != 0:
         numerator += 1
     else:
-        print "Object not found: %s" % (k)
-        print "    " + ", ".join(sorted(set([str(x[2]) for x in objdata[k]])))
+        sys.stdout.write("Object not found: %s\n" % (k))
+        sys.stdout.write("    " + ", ".join(sorted(set([str(x[2]) for x in objdata[k]]))) + "\n")
 
 denominator = len(objdata_count.keys())
 sensitivity = round((float(numerator) / denominator) * 100, 2)
