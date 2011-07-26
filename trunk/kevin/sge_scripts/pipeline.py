@@ -40,7 +40,7 @@ for case in os.listdir(sys.argv[1]): # loop through PET directories
 
         scriptfn = "%s_%s.sh" % (case, ab)
         scriptlist.append(scriptfn)
-        numofslices = len(os.listdir(os.path.join(subcasepath, "PT")))
+        #numofslices = len(os.listdir(os.path.join(subcasepath, "PT")))
         f = open(os.path.join(sys.argv[3], scriptfn), 'w')
         f.write("#!/bin/bash\n")
         f.write("#$ -N %s\n" % (scriptfn))

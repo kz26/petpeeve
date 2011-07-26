@@ -16,11 +16,12 @@ if len(sys.argv) != 3:
     print "Usage: %s labeled_ref_file input_dir" % (sys.argv[0])
     sys.exit(-1)
 
-with open(sys.argv[1], 'r') as f:
-    objdata = pickle.load(f)
+f = open(sys.argv[1], 'r')
+objdata = pickle.load(f)
 objdata_count = {}
 for k in objdata.keys():
     objdata_count[k] = False
+f.close()
 
 currentslice = 0
 for k in objdata.keys():
