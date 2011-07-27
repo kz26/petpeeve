@@ -4,7 +4,17 @@
 # Output: line 1 = # of TPs, line 2 = # of FPs
 
 import os, sys, pickle
-from scipy import stats
+
+def mode(mylist):
+    count = {}
+    for i in mylist:
+        if i not in count.keys():
+            count[i] = 0
+        count[i] += 1
+    freq = []
+    for k in count.keys():
+        freq.append((k, count[k]))
+    return sorted(freq, key=lambda x: x[1])[-1][0]
 
 if len(sys.argv) != 3:
     print "Usage: %s labeled_mask_data labeled_output_data" % (sys.argv[0])
@@ -36,14 +46,15 @@ for label in inputdata.keys():
             
 ref_detected = 0
 for label in refdata_pxcount.keys():
-    inputlabels_mode = int(stats.mode(refdata_pxcount[label])[0][0])
+    if len(refdata_pxcount[label]) == 0: continue
+    inputlabels_mode = int(mode(refdata_pxcount[label]))
     input_pct = float(inputdata_pxcount[inputlabels_mode]) / len(inputdata[inputlabels_mode])
     if (float(len(refdata_pxcount[label])) / len(refdata[label]) >= 0.5) or input_pct >= 0.5:
         ref_detected += 1
 
 num_tp = 0
 for label in inputdata_pxcount.keys():
-    if float(inputdata_pxcount[label]) / len(inputdata[label]) >= 0.5:
+    if float(inputdata_pxcount[label]) / len(inputdata[label]) >= 0.25:
         num_tp += 1
 
 print "Sensitivity: %s" % (round(float(ref_detected) / len(refdata.keys()), 2) * 100)
