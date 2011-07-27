@@ -12,7 +12,7 @@ fnpat = re.compile("Img001_([0-9]{4})")
 def readImageSeries(imagedir):
     os.chdir(imagedir)
     files = os.listdir(".")
-    data = {} # key is label value/object ID; subkey is z-coordinate; final layer is a list of 2-tuples (x, y)
+    data = {} # key is label value/object ID; key is a list of points; each point is a 3-tuple (x, y, z)
     for f in sorted(files):
         fnmatch = fnpat.match(f)
         if not fnmatch: continue

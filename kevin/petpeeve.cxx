@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->SetInsideValue(255);
     BinaryThresholdFilter->SetOutsideValue(0);
     BinaryThresholdFilter->SetLowerThreshold(-65536);
-    BinaryThresholdFilter->SetUpperThreshold(-65);
+    BinaryThresholdFilter->SetUpperThreshold(-80);
     BinaryThresholdFilter->SetInput(LoGFilter->GetOutput());
 
     // Secondary binary dilation step
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     CCFilter->SetMaskImage(BinaryDilateFilter2->GetOutput());
     //CCFilter->FullyConnectedOn();
     
-    unsigned int min_object_size = 10;
+    unsigned int min_object_size = 20;
     // Relabel component filter
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
     // Write end result of pipeline
     // Set up FileSeriesWriter
     WriterType::Pointer writer = WriterType::New();
-    writer->SetInput(EightBitToDCMFilter->GetOutput());
+    writer->SetInput(RescaleIntensityFilter->GetOutput());
     //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];

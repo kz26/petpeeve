@@ -20,7 +20,8 @@ f = open(sys.argv[1], 'r')
 objdata = pickle.load(f)
 objdata_count = {}
 for k in objdata.keys():
-    objdata_count[k] = False
+    #objdata_count[k] = False
+    objdata_count[k] = 0
 f.close()
 
 currentslice = 0
@@ -31,12 +32,14 @@ for k in objdata.keys():
             fn = "Img001_%04d.dcm" % (point[2])
             ds = dicom.read_file(os.path.join(sys.argv[2], fn))
         if ds.pixel_array[point[0]][point[1]] != 0:
-            objdata_count[k] = True
-            break
+            objdata_count[k] += 1
+            #break
 
 numerator = 0
 for k in objdata_count.keys():
-    if objdata_count[k]:
+    #print float(objdata_count[k])
+    #print len(objdata[k])
+    if float(objdata_count[k]) / len(objdata[k]) >= 0.5:
         numerator += 1
     else:
         sys.stdout.write("Object not found: %s\n" % (k))
