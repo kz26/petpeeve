@@ -19,6 +19,7 @@ if not os.path.exists(sys.argv[2]):
 for case in os.listdir(sys.argv[1]): # loop through PET directories
     casepath = os.path.join(sys.argv[1], case)
     if len(os.listdir(casepath)) == 0:
+            print "Deleting %s..." % (casepath)
             shutil.rmtree(casepath)
             continue
     for ab in os.listdir(casepath): # loop through before/after
@@ -29,6 +30,7 @@ for case in os.listdir(sys.argv[1]): # loop through PET directories
         if not os.path.exists(os.path.join(subcasepath, "PT_manual_contours_bin_labeled")): DeleteSubcase = True
         if not os.path.exists(os.path.join(subcasepath, "seeds.dat")): DeleteSubcase = True
         if DeleteSubcase:
+            print "Deleting %s..." % (subcasepath)
             shutil.rmtree(subcasepath)
             continue
         scriptfn = "%s_%s.sh" % (case, ab)
