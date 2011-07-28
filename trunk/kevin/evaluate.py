@@ -37,25 +37,22 @@ for label in refdata.keys():
     refdata_pxcount[label] = []
 
 for label in inputdata.keys():
-    inputdata_pxcount[label] = 0
+    inputdata_pxcount[label] = []
     for point in inputdata[label]:
         for reflabel in refdata.keys():
             if point in refdata[reflabel]:
-                inputdata_pxcount[label] += 1
-                refdata_pxcount[reflabel].append(label)
+                inputdata_pxcount[label].append(reflabel) # tracks all the lesion objects that pixels in this object belong to
+                refdata_pxcount[reflabel].append(label) # tracks all the detected objects that fall within this lesion
             
 ref_detected = 0
 for label in refdata_pxcount.keys():
-    if len(refdata_pxcount[label]) == 0: continue
-    inputlabels_mode = int(mode(refdata_pxcount[label]))
-    input_pct = float(inputdata_pxcount[inputlabels_mode]) / len(inputdata[inputlabels_mode])
-    if (float(len(refdata_pxcount[label])) / len(refdata[label]) >= 0.5) or input_pct >= 0.5:
-        ref_detected += 1
+    if len(refdata_pxcount[label]) != 0:
+        ref_detected += 1 # as long as >=1 object overlaps with this lesion, count it as a detection
 
 num_tp = 0
 for label in inputdata_pxcount.keys():
-    if float(inputdata_pxcount[label]) / len(inputdata[label]) >= 0.25:
-        num_tp += 1
+    if len(inputdata_pxcount[label]) != 0:
+        num_tp +=  # As long as our object overlaps with >=1 lesions, count it as a TP
 
 print "Sensitivity: %s" % (round(float(ref_detected) / len(refdata.keys()), 2) * 100)
 print "TP: %s" % (num_tp)

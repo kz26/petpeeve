@@ -62,6 +62,7 @@ mf = open(sys.argv[4], 'w')
 mf.write("#!/bin/bash\n")
 for s in scriptlist:
     mf.write("qsub %s\n" % (os.path.abspath(os.path.join(sys.argv[3], s))))
+    mf.write("sleep 0.2\n")
 mf.close()
 os.system("chmod +x %s" % (sys.argv[4]))
 
