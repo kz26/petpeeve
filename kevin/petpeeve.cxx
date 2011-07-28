@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 
     // Convert from eight-bit to DCM pixel type
     EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
-    EightBitToDCMFilter->SetInput(BinaryDilateFilter2->GetOutput());
+    EightBitToDCMFilter->SetInput(BinaryDilateFilter->GetOutput());
 
     // Write end result of pipeline
     // Set up FileSeriesWriter
@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
     // Write raw output files
     // Set up FileSeriesWriter for masks
     RawWriterType::Pointer RawWriter = RawWriterType::New();
-    RawWriter->SetInput(FloatToDCMFilter->GetOutput());
+    RawWriter->SetInput(EightBitToDCMFilter->GetOutput());
     RawWriter->SetImageIO(dcmIO);
     const char * RawOutputDirectory = argv[3];
     itksys::SystemTools::MakeDirectory(RawOutputDirectory);
