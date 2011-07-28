@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilter->SetInsideValue(255);
     BinaryThresholdFilter->SetOutsideValue(0);
     BinaryThresholdFilter->SetLowerThreshold(-65536);
-    BinaryThresholdFilter->SetUpperThreshold(-80);
+    BinaryThresholdFilter->SetUpperThreshold(-65);
     BinaryThresholdFilter->SetInput(LoGFilter->GetOutput());
 
     // Secondary binary dilation step
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     CCFilter->SetMaskImage(BinaryDilateFilter2->GetOutput());
     //CCFilter->FullyConnectedOn();
     
-    unsigned int min_object_size = 20;
+    unsigned int min_object_size = 10;
     // Relabel component filter
     RelabelFilterType::Pointer RelabelFilter = RelabelFilterType::New();
     RelabelFilter->SetInput(CCFilter->GetOutput());
