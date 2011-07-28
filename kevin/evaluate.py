@@ -52,7 +52,7 @@ for label in refdata_pxcount.keys():
 num_tp = 0
 for label in inputdata_pxcount.keys():
     if len(inputdata_pxcount[label]) != 0:
-        num_tp +=  # As long as our object overlaps with >=1 lesions, count it as a TP
+        num_tp += 1 # As long as our object overlaps with >=1 lesions, count it as a TP
 
 print "Sensitivity: %s" % (round(float(ref_detected) / len(refdata.keys()), 2) * 100)
 print "TP: %s" % (num_tp)
