@@ -53,7 +53,7 @@ for case in os.listdir(sys.argv[1]): # loop through PET directories
         #f.write("%s/sensitivity.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "centroids-fixed.txt"), os.path.join(outputpath, "sensitivity-region.txt")))
         #f.write("%s/sensitivity2.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "output"), os.path.join(outputpath, "sensitivity-overlap.txt")))
         f.write("%s/ImgSeriesReader.py %s %s\n" % (bindir, os.path.join(outputpath, "output"), os.path.join(outputpath, "output_data")))
-        f.write("%s/evaluate.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "output_data"), os.path.join(outputpath, "tpfp.txt")))
+        f.write("%s/evaluate.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "output_data"), os.path.join(outputpath, "results.txt")))
         #f.write("%s/PointsInTumor.py %s %s > %s\n" % (bindir, os.path.join(outputpath, "centroids-fixed.txt"), os.path.join(subcasepath, "PT_manual_contours_bin"), os.path.join(outputpath, "points_in_tumor.txt")))
         #f.write("%s/CompareSeedPoints.py %s %s %s > %s\n" % (bindir, os.path.join(subcasepath, "seeds-fixed.txt"), os.path.join(outputpath, "centroids-fixed.txt"), "8", os.path.join(outputpath, "seed_compare.txt")))
         f.close()
