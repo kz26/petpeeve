@@ -31,6 +31,7 @@ f = open(sys.argv[2], 'r')
 inputdata = pickle.load(f)
 f.close()
 
+
 refdata_pxcount = {}
 inputdata_pxcount = {}
 for label in refdata.keys():
@@ -44,16 +45,17 @@ for label in inputdata.keys():
                 inputdata_pxcount[label].append(reflabel) # tracks all the lesion objects that pixels in this object belong to
                 refdata_pxcount[reflabel].append(label) # tracks all the detected objects that fall within this lesion
             
-ref_detected = 0
-for label in refdata_pxcount.keys():
-    if len(refdata_pxcount[label]) != 0:
-        ref_detected += 1 # as long as >=1 object overlaps with this lesion, count it as a detection
-
-num_tp = 0
+tp_lesions = []
+fp_count = 0
 for label in inputdata_pxcount.keys():
-    if len(inputdata_pxcount[label]) != 0:
-        num_tp += 1 # As long as our object overlaps with >=1 lesions, count it as a TP
+    if float(len(inputdata_pxcount[label])) / len(inputdata[label]) < 0.25: # minimum overlap threshold
+        fp_count += 1
+        continue
+    for obj in inputdata_pxcount[label]:
+        if obj not in tp_lesions:
+            tp_lesions.append(obj)
+print "TP: %s" % (len(tp_lesions))
+print "FP: %s" % (fp_count)
+print "Sensitivity: %s" % (float(len(tp_lesions)) / len(refdata.keys()))
 
-print "Sensitivity: %s" % (round(float(ref_detected) / len(refdata.keys()), 2) * 100)
-print "TP: %s" % (num_tp)
-print "FP: %s" % (len(inputdata.keys()) - num_tp)
+

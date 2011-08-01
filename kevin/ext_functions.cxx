@@ -12,6 +12,48 @@ int round(float num)
     return static_cast<int>(floor(num + 0.5));
 }
 
+float mean(std::vector<float> vals)
+{
+    float sum = 0;
+    for(int i = 0; i < vals.size(); i++)
+        sum += vals[i];
+    return sum / vals.size();
+}
+float findMax(FloatImageType::Pointer inputimg) // finds the maximum pixel value in an image
+{
+    typedef itk::MinimumMaximumImageCalculator<FloatImageType> MinMaxFilterType;
+    MinMaxFilterType::Pointer MinMaxFilter = MinMaxFilterType::New();
+    MinMaxFilter->SetImage(inputimg);
+    MinMaxFilter->ComputeMaximum();
+    return MinMaxFilter->GetMaximum();
+}
+
+int findThreshold(FloatImageType::Pointer maximaimg, FloatImageType::Pointer inputimg) // input image is output from HConcaveImageFilter
+{
+    std::vector<float> pixvals;
+
+    std::cerr << "Concave filter pixel max: " << findMax(maximaimg) << std::endl;
+    //float pixmax = findMax(maximaimg);
+    FloatImageType::RegionType InputRegion;
+    FloatImageType::RegionType::IndexType InputStart;
+    InputStart[0] = 0;
+    InputStart[1] = 0;
+    InputStart[2] = 0;
+    InputRegion.SetSize(maximaimg->GetRequestedRegion().GetSize());
+    InputRegion.SetIndex(InputStart);
+
+    typedef itk::ImageRegionConstIteratorWithIndex<FloatImageType> ConstIteratorWithIndexType;
+    ConstIteratorWithIndexType MaximaIterator(maximaimg, InputRegion);
+    ConstIteratorWithIndexType InputIterator(inputimg, InputRegion);
+
+    for(MaximaIterator.GoToBegin(), InputIterator.GoToBegin(); !MaximaIterator.IsAtEnd(); ++MaximaIterator, ++InputIterator)
+    {
+        if(MaximaIterator.Get() > 25)
+            pixvals.push_back(InputIterator.Get());
+    }
+    return round(mean(pixvals));
+}
+
 // imported from 2009_11_06_CandidateFinder_adaptive_best
 void printCentroids(RelabelFilterType::Pointer RelabelFilter)
 {
@@ -62,6 +104,30 @@ void printCentroids(RelabelFilterType::Pointer RelabelFilter)
 
 }
 
+void printHistogram(FloatImageType::Pointer inputimage)
+{
+    typedef itk::Statistics::ScalarImageToHistogramGenerator<FloatImageType > HistogramGeneratorType;
+    HistogramGeneratorType::Pointer HistogramGenerator = HistogramGeneratorType::New();
+    HistogramGenerator->SetInput(inputimage);
+    HistogramGenerator->SetNumberOfBins(100);
+    HistogramGenerator->SetMarginalScale(10);
+    HistogramGenerator->SetHistogramMin(-500);
+    HistogramGenerator->SetHistogramMax(500);
+    HistogramGenerator->Compute();
+
+    typedef HistogramGeneratorType::HistogramType HistogramType;
+    const HistogramType * histogram = HistogramGenerator->GetOutput();
+
+    const unsigned int histogramSize = histogram->Size();
+    std::cerr << "Histogram size " << histogramSize << std::endl;
+
+    unsigned int bin;
+    for( bin=0; bin < histogramSize; bin++ )
+    {
+        std::cerr << "bin = " << bin << " frequency = ";
+        std::cerr << histogram->GetFrequency( bin, 0 ) << std::endl;
+    }
+}
 /*
 FloatImageType::Pointer makeSRGPyramidImage(FloatImageType::Pointer inputimage, int levels, int threads)
 {

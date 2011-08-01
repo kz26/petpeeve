@@ -26,9 +26,9 @@ if not os.path.exists(sys.argv[3]):
     os.makedirs(sys.argv[3])
 
 
-for case in os.listdir(sys.argv[1]): # loop through PET directories
+for case in sorted(os.listdir(sys.argv[1])): # loop through PET directories
     casepath = os.path.join(sys.argv[1], case)
-    for ab in os.listdir(casepath): # loop through before/after
+    for ab in sorted(os.listdir(casepath)): # loop through before/after
         subcasepath = os.path.join(casepath, ab)
           
         outputpath = os.path.join(sys.argv[2], case, ab) 
