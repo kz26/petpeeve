@@ -48,7 +48,7 @@ for case in sorted(os.listdir(sys.argv[1])): # loop through PET directories
         f.write("#$ -o %s\n" % (os.path.join(outputpath, "run.log")))
         f.write("#$ -cwd\n")
         f.write("%s/utils/delslices.py %s %s 4\n" % (bindir, os.path.join(subcasepath, "PT"), os.path.join(outputpath, "PT_trimmed")))
-        f.write("%s/petpeeve %s %s %s %s %s > %s\n" % (bindir, os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_raw"), "5", "2", os.path.join(outputpath, "centroids.txt")))
+        f.write("%s/petpeeve %s %s %s %s %s %s > %s\n" % (bindir, os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_raw1"), os.path.join(outputpath, "output_raw2"), "5", "2", os.path.join(outputpath, "centroids.txt")))
         f.write("%s/utils/seedfix.py --offset %s %s > %s\n" % (bindir, os.path.join(outputpath, "centroids.txt"), os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "centroids-fixed.txt")))
         #f.write("%s/sensitivity.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "centroids-fixed.txt"), os.path.join(outputpath, "sensitivity-region.txt")))
         #f.write("%s/sensitivity2.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "output"), os.path.join(outputpath, "sensitivity-overlap.txt")))
