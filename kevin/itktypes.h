@@ -37,6 +37,7 @@
 #include "itkInvertIntensityImageFilter.h"
 #include "itkMinimumMaximumImageCalculator.h"
 #include "itkScalarImageToHistogramGenerator.h"
+#include "itkHessianRecursiveGaussianImageFilter.h"
 
 #include <algorithm>
 #include <vector>
@@ -63,6 +64,7 @@ typedef itk::CastImageFilter<FloatImageType, DCMImageType> FloatToDCMFilterType;
 typedef itk::CastImageFilter<LongImageType, DCMImageType> LongToDCMFilterType;
 typedef itk::CastImageFilter<EightBitImageType, DCMImageType> EightBitToDCMFilterType;
 typedef itk::CastImageFilter<FloatImageType, EightBitImageType> FloatToEightBitFilterType;
+typedef itk::CastImageFilter<EightBitImageType, FloatImageType> EightBitToFloatFilterType;
 
 typedef itk::OtsuThresholdImageFilter<FloatImageType, EightBitImageType> OtsuFilterType;
 typedef itk::OtsuMultipleThresholdsImageFilter<FloatImageType, EightBitImageType> OtsuMultipleFilterType;
@@ -73,6 +75,7 @@ typedef itk::InvertIntensityImageFilter<EightBitImageType, EightBitImageType> In
 typedef itk::MaskImageFilter<FloatImageType, EightBitImageType, FloatImageType> MaskFilterType;
 typedef itk::SmoothingRecursiveGaussianImageFilter<FloatImageType, FloatImageType> RGFilterType;
 typedef itk::LaplacianRecursiveGaussianImageFilter<FloatImageType, FloatImageType> LoGFilterType;
+typedef itk::HessianRecursiveGaussianImageFilter<FloatImageType, FloatImageType> HessianFilterType;
 typedef itk::HConvexImageFilter<DCMImageType, DCMImageType> ConvexFilterType;
 typedef itk::HConcaveImageFilter<FloatImageType, FloatImageType> ConcaveFilterType;
 typedef itk::RescaleIntensityImageFilter<DCMImageType, DCMImageType> RescaleIntensityFilterType;
@@ -91,9 +94,6 @@ typedef itk::RelabelComponentImageFilter<DCMImageType, DCMImageType> RelabelFilt
 typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
 typedef itk::OrientedImage<EightBitPixelType, 2> BinaryOutputImageType;
 typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> WriterType;
-
-// Labeled file series writer types (from RelabelComponentImageFilter)
-typedef itk::ImageSeriesWriter<DCMImageType, OutputImageType> RawWriterType;
 
 /*
 // Mask writer types

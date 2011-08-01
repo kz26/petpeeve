@@ -48,14 +48,17 @@ for label in inputdata.keys():
 tp_lesions = []
 fp_count = 0
 for label in inputdata_pxcount.keys():
-    if float(len(inputdata_pxcount[label])) / len(inputdata[label]) < 0.25: # minimum overlap threshold
-        fp_count += 1
+    if float(len(inputdata_pxcount[label])) / len(inputdata[label]) < 0.05: # minimum overlap threshold
+        fp_count += 1 # count as false positive
+        #print "%s FP" % (len(inputdata[label]))
         continue
-    for obj in inputdata_pxcount[label]:
+    #print len(inputdata[label])
+    for obj in inputdata_pxcount[label]: # count each lesion in each detected object
         if obj not in tp_lesions:
             tp_lesions.append(obj)
 print "TP: %s" % (len(tp_lesions))
 print "FP: %s" % (fp_count)
-print "Sensitivity: %s" % (float(len(tp_lesions)) / len(refdata.keys()))
+sensitivity = round((float(len(tp_lesions)) / len(refdata.keys())) * 100, 2)
+print "Sensitivity: %s" % (sensitivity)
 
 
