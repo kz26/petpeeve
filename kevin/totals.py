@@ -21,9 +21,9 @@ for line in f:
     lines.append(line.rstrip())
 f.close()
 
-sens = [float(lines[i].split(" ")[1]) for i in range(1, len(lines), 4)]
-tp = [int(lines[i].split(" ")[1]) for i in range(2, len(lines), 4)]
-fp = [int(lines[i].split(" ")[1]) for i in range(3, len(lines), 4)]
+sens = [float(lines[i].split(" ")[1]) for i in range(3, len(lines), 4)]
+tp = [int(lines[i].split(" ")[1]) for i in range(1, len(lines), 4)]
+fp = [int(lines[i].split(" ")[1]) for i in range(2, len(lines), 4)]
 
 print "Total sensitivity: %s" % (np.mean(sens))
 print "Total TPs: %s" % (sum(tp))

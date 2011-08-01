@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
     // Find minima
     ConcaveFilterType::Pointer ConcaveFilter = ConcaveFilterType::New();
     ConcaveFilter->SetInput(LoGFilter->GetOutput());
-    ConcaveFilter->SetHeight(150);
+    ConcaveFilter->SetHeight(200);
     
     FloatRescaleIntensityFilterType::Pointer FloatRescaleFilter = FloatRescaleIntensityFilterType::New();
     FloatRescaleFilter->SetOutputMinimum(0);
@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilterType::Pointer BinaryThresholdFilterC = BinaryThresholdFilterType::New();
     BinaryThresholdFilterC->SetInsideValue(255);
     BinaryThresholdFilterC->SetOutsideValue(0);
-    BinaryThresholdFilterC->SetLowerThreshold(20); // controls acceptance threshold for output from concave filter
+    BinaryThresholdFilterC->SetLowerThreshold(15); // controls acceptance threshold for output from concave filter
     BinaryThresholdFilterC->SetUpperThreshold(100);
     BinaryThresholdFilterC->SetInput(FloatRescaleFilter->GetOutput());
 
@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
     EightBitToFloatFilterType::Pointer EightBitToFloatFilter = EightBitToFloatFilterType::New();
     EightBitToFloatFilter->SetInput(BinaryDilateFilterC->GetOutput());
     EightBitToFloatFilter->Update();
-    int thres = 0.65 * findThreshold(EightBitToFloatFilter->GetOutput(), LoGFilter->GetOutput());
+    int thres = 0.5 * findThreshold(EightBitToFloatFilter->GetOutput(), LoGFilter->GetOutput());
     std::cerr << "Determined threshold: " << thres << std::endl;
 
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
