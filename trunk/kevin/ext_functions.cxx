@@ -48,7 +48,7 @@ int findThreshold(FloatImageType::Pointer maximaimg, FloatImageType::Pointer inp
 
     for(MaximaIterator.GoToBegin(), InputIterator.GoToBegin(); !MaximaIterator.IsAtEnd(); ++MaximaIterator, ++InputIterator)
     {
-        if(MaximaIterator.Get() > 25)
+        if(MaximaIterator.Get() > 0)
             pixvals.push_back(InputIterator.Get());
     }
     return round(mean(pixvals));
