@@ -8,9 +8,10 @@
 #include "itkImageSeriesReader.h"
 #include "itkImageSeriesWriter.h"
 #include "itkOtsuThresholdImageFilter.h"
+#include "itkOtsuMultipleThresholdsImageFilter.h"
 #include "itkImage.h"
 #include "itkImageFileReader.h"
-#include "itkMaskNegatedImageFilter.h"
+#include "itkMaskImageFilter.h"
 #include "itkThresholdImageFilter.h"
 #include "itkOtsuMultipleThresholdsImageFilter.h"
 #include "itkBinaryDilateImageFilter.h"
@@ -22,6 +23,7 @@
 #include "itkSmoothingRecursiveGaussianImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkHConvexImageFilter.h"
+#include "itkHConcaveImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
@@ -32,8 +34,12 @@
 #include "itkIdentityTransform.h"
 #include "itkLinearInterpolateImageFunction.h"
 #include "itkLaplacianRecursiveGaussianImageFilter.h"
+#include "itkInvertIntensityImageFilter.h"
+#include "itkMinimumMaximumImageCalculator.h"
+#include "itkScalarImageToHistogramGenerator.h"
 
 #include <algorithm>
+#include <vector>
 
 // type definitions
 typedef signed short DCMPixelType;
@@ -56,20 +62,28 @@ typedef itk::CastImageFilter<DCMImageType, FloatImageType> DCMToFloatFilterType;
 typedef itk::CastImageFilter<FloatImageType, DCMImageType> FloatToDCMFilterType;
 typedef itk::CastImageFilter<LongImageType, DCMImageType> LongToDCMFilterType;
 typedef itk::CastImageFilter<EightBitImageType, DCMImageType> EightBitToDCMFilterType;
+typedef itk::CastImageFilter<FloatImageType, EightBitImageType> FloatToEightBitFilterType;
 
 typedef itk::OtsuThresholdImageFilter<FloatImageType, EightBitImageType> OtsuFilterType;
+typedef itk::OtsuMultipleThresholdsImageFilter<FloatImageType, EightBitImageType> OtsuMultipleFilterType;
 typedef itk::BinaryBallStructuringElement<EightBitPixelType, 3> BBStructuringElementBinType;
 typedef itk::BinaryErodeImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> ErodeFilterType;
 typedef itk::BinaryDilateImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> DilateFilterType;
-typedef itk::MaskNegatedImageFilter<FloatImageType, EightBitImageType, FloatImageType> MaskFilterType;
+typedef itk::InvertIntensityImageFilter<EightBitImageType, EightBitImageType> InvertIntensityFilterType;
+typedef itk::MaskImageFilter<FloatImageType, EightBitImageType, FloatImageType> MaskFilterType;
 typedef itk::SmoothingRecursiveGaussianImageFilter<FloatImageType, FloatImageType> RGFilterType;
 typedef itk::LaplacianRecursiveGaussianImageFilter<FloatImageType, FloatImageType> LoGFilterType;
 typedef itk::HConvexImageFilter<DCMImageType, DCMImageType> ConvexFilterType;
+typedef itk::HConcaveImageFilter<FloatImageType, FloatImageType> ConcaveFilterType;
 typedef itk::RescaleIntensityImageFilter<DCMImageType, DCMImageType> RescaleIntensityFilterType;
+typedef itk::RescaleIntensityImageFilter<FloatImageType, FloatImageType> FloatRescaleIntensityFilterType;
 typedef itk::CastImageFilter<DCMImageType, EightBitImageType> DCMToBinaryCastFilterType;
 typedef itk::ThresholdImageFilter<EightBitImageType> EightBitThresholdFilterType;
 typedef itk::ThresholdImageFilter<FloatImageType> ThresholdFilterType;
+typedef itk::ThresholdImageFilter<DCMImageType> DCMThresholdFilterType;
+typedef itk::BinaryThresholdImageFilter<DCMImageType, EightBitImageType> MaskBTFilterType;
 typedef itk::BinaryThresholdImageFilter<FloatImageType, EightBitImageType> BinaryThresholdFilterType;
+typedef itk::BinaryThresholdImageFilter<EightBitImageType, EightBitImageType> EightBitBinaryThresholdFilterType;
 typedef itk::ConnectedComponentImageFilter<EightBitImageType, DCMImageType, EightBitImageType> CCFilterType;
 typedef itk::RelabelComponentImageFilter<DCMImageType, DCMImageType> RelabelFilterType;
 

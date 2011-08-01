@@ -55,29 +55,46 @@ int main(int argc, char* argv[])
     OtsuFilterType::Pointer OtsuFilter = OtsuFilterType::New();
     OtsuFilter->SetInput(DCMToFloatFilter->GetOutput());
 
+    InvertIntensityFilterType::Pointer InvertFilter = InvertIntensityFilterType::New();
+    InvertFilter->SetInput(OtsuFilter->GetOutput());
+
     // Initialize structuring element (binary)
     BBStructuringElementBinType BBStructuringElementBin;
-    BBStructuringElementBin.SetRadius(10); 
     BBStructuringElementBin.CreateStructuringElement();
 
-    // begin binary erosion filter
-    ErodeFilterType::Pointer BinaryErodeFilter = ErodeFilterType::New();
-    BinaryErodeFilter->SetKernel(BBStructuringElementBin);
-    BinaryErodeFilter->SetErodeValue(255);
-    BinaryErodeFilter->SetInput(OtsuFilter->GetOutput());
-
     // begin binary dilation filter
-    BBStructuringElementBin.SetRadius(1);
+    BBStructuringElementBin.SetRadius(3);
     DilateFilterType::Pointer BinaryDilateFilter = DilateFilterType::New();
     BinaryDilateFilter->SetKernel(BBStructuringElementBin);
     BinaryDilateFilter->SetDilateValue(255);
-    BinaryDilateFilter->SetInput(BinaryErodeFilter->GetOutput());
+    BinaryDilateFilter->SetInput(InvertFilter->GetOutput());
+
+    // begin binary erosion filter
+    BBStructuringElementBin.SetRadius(1);
+    ErodeFilterType::Pointer BinaryErodeFilter = ErodeFilterType::New();
+    BinaryErodeFilter->SetKernel(BBStructuringElementBin);
+    BinaryErodeFilter->SetErodeValue(255);
+    BinaryErodeFilter->SetInput(BinaryDilateFilter->GetOutput());
+
+    CCFilterType::Pointer MaskCCFilter = CCFilterType::New();
+    MaskCCFilter->SetNumberOfThreads(num_threads);
+    MaskCCFilter->SetInput(BinaryErodeFilter->GetOutput());
+
+    RelabelFilterType::Pointer MaskRelabelFilter = RelabelFilterType::New();
+    MaskRelabelFilter->SetNumberOfThreads(num_threads);
+    MaskRelabelFilter->SetInput(MaskCCFilter->GetOutput());
+
+    MaskBTFilterType::Pointer MaskBTFilter = MaskBTFilterType::New();
+    MaskBTFilter->SetOutsideValue(0);
+    MaskBTFilter->SetInsideValue(255);
+    MaskBTFilter->SetLowerThreshold(1);
+    MaskBTFilter->SetUpperThreshold(1);
+    MaskBTFilter->SetInput(MaskRelabelFilter->GetOutput());
 
     // Apply mask
     MaskFilterType::Pointer MaskFilter = MaskFilterType::New();
     MaskFilter->SetInput1(DCMToFloatFilter->GetOutput());
-    //MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
-    MaskFilter->SetInput2(BinaryDilateFilter->GetOutput());
+    MaskFilter->SetInput2(MaskBTFilter->GetOutput());
 
     /*
     // Apply recursive Gaussian blur
@@ -92,32 +109,54 @@ int main(int argc, char* argv[])
     LoGFilterType::Pointer LoGFilter = LoGFilterType::New();
     LoGFilter->SetSigma(sigma);
     LoGFilter->SetInput(MaskFilter->GetOutput());
-
+    LoGFilter->Update();
+    //printHistogram(LoGFilter->GetOutput());
     /*
-    // Rescale image intensity
-    FloatRescaleIntensityFilterType::Pointer LoGRescaleIntensityFilter = FloatRescaleIntensityFilterType::New();
-    LoGRescaleIntensityFilter->SetOutputMinimum(-1000);
-    LoGRescaleIntensityFilter->SetOutputMaximum(1000);
-    LoGRescaleIntensityFilter->SetNumberOfThreads(num_threads);
-    LoGRescaleIntensityFilter->SetInput(LoGFilter->GetOutput());
+    // Apply Otsu multiple threshold
+    OtsuMultipleFilterType::Pointer OtsuMultipleFilter = OtsuMultipleFilterType::New();
+    OtsuMultipleFilter->SetInput(LoGFilter->GetOutput());
+    OtsuMultipleFilter->SetNumberOfThresholds(5);
+    OtsuMultipleFilter->SetNumberOfHistogramBins(256);
     */
 
-    /*
-    // Apply 50% thresholding
-    ThresholdFilterType::Pointer Threshold50Filter = ThresholdFilterType::New();
-    Threshold50Filter->SetOutsideValue(0);
-    Threshold50Filter->ThresholdBelow(7000);
-    Threshold50Filter->SetNumberOfThreads(num_threads);
-    Threshold50Filter->SetInput(LoGFilter->GetOutput());
-    */
+    // Find minima
+    ConcaveFilterType::Pointer ConcaveFilter = ConcaveFilterType::New();
+    ConcaveFilter->SetInput(LoGFilter->GetOutput());
+    ConcaveFilter->SetHeight(150);
+    
+    FloatRescaleIntensityFilterType::Pointer FloatRescaleFilter = FloatRescaleIntensityFilterType::New();
+    FloatRescaleFilter->SetOutputMinimum(0);
+    FloatRescaleFilter->SetOutputMaximum(100);
+    FloatRescaleFilter->SetInput(ConcaveFilter->GetOutput());
+    FloatRescaleFilter->Update();
+
+    BinaryThresholdFilterType::Pointer BinaryThresholdFilterC = BinaryThresholdFilterType::New();
+    BinaryThresholdFilterC->SetInsideValue(255);
+    BinaryThresholdFilterC->SetOutsideValue(0);
+    BinaryThresholdFilterC->SetLowerThreshold(20);
+    BinaryThresholdFilterC->SetUpperThreshold(100);
+    BinaryThresholdFilterC->SetInput(FloatRescaleFilter->GetOutput());
+
+    BBStructuringElementBin.SetRadius(1);
+    DilateFilterType::Pointer BinaryDilateFilterC = DilateFilterType::New();
+    BinaryDilateFilterC->SetKernel(BBStructuringElementBin);
+    BinaryDilateFilterC->SetDilateValue(255);
+    BinaryDilateFilterC->SetInput(BinaryThresholdFilterC->GetOutput());
+
+    int thres = 0.65 * findThreshold(FloatRescaleFilter->GetOutput(), LoGFilter->GetOutput());
+    std::cerr << "Determined threshold: " << thres << std::endl;
+
+    MaskFilterType::Pointer MaskFilterC = MaskFilterType::New();
+    MaskFilterC->SetInput1(LoGFilter->GetOutput());
+    MaskFilterC->SetInput2(BinaryDilateFilterC->GetOutput());
 
     // Apply thresholding and convert to binary
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
     BinaryThresholdFilter->SetInsideValue(255);
     BinaryThresholdFilter->SetOutsideValue(0);
     BinaryThresholdFilter->SetLowerThreshold(-65536);
-    BinaryThresholdFilter->SetUpperThreshold(-65);
-    BinaryThresholdFilter->SetInput(LoGFilter->GetOutput());
+    BinaryThresholdFilter->SetUpperThreshold(thres);
+    BinaryThresholdFilter->SetInput(MaskFilterC->GetOutput());
 
     // Secondary binary dilation step
     BBStructuringElementBin.SetRadius(1);
@@ -125,19 +164,6 @@ int main(int argc, char* argv[])
     BinaryDilateFilter2->SetKernel(BBStructuringElementBin);
     BinaryDilateFilter2->SetDilateValue(255);
     BinaryDilateFilter2->SetInput(BinaryThresholdFilter->GetOutput());
-
-    //MaskFilter->Update();
-    //DCMImageType::Pointer MultiImage = makeSRGPyramidImage(MaskFilter->GetOutput(), level, num_threads);
-    
-    /*
-    // Apply convex image filter
-    ConvexFilterType::Pointer ConvexFilter = ConvexFilterType::New();
-    ConvexFilter->SetHeight(100);
-    ConvexFilter->SetNumberOfThreads(num_threads);
-    //ConvexFilter->FullyConnectedOn();
-    //ConvexFilter->SetInput(RGFilter->GetOutput());
-    ConvexFilter->SetInput(MultiImage);
-    */
 
     CCFilterType::Pointer CCFilter = CCFilterType::New();
     CCFilter->SetNumberOfThreads(num_threads);
@@ -172,25 +198,30 @@ int main(int argc, char* argv[])
 
     // Convert back to DCM pixel type
     FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
-    FloatToDCMFilter->SetInput(LoGFilter->GetOutput());
+    FloatToDCMFilter->SetInput(MaskFilterC->GetOutput());
+
+    //FloatToDCMFilterType::Pointer FloatToDCMFilter2 = FloatToDCMFilterType::New();
+    //FloatToDCMFilter2->SetInput(BinaryDilateFilterC->GetOutput());
 
     /*
-    // Rescale LoGFilter for output purposes
+    // Rescale HConvex filter for output purposes
     RescaleIntensityFilterType::Pointer RescaleIntensityFilter2 = RescaleIntensityFilterType::New();
-    RescaleIntensityFilter2->SetOutputMinimum(-1000);
-    RescaleIntensityFilter2->SetOutputMaximum(1000);
+    RescaleIntensityFilter2->SetOutputMinimum(0);
+    RescaleIntensityFilter2->SetOutputMaximum(255);
     RescaleIntensityFilter2->SetNumberOfThreads(num_threads);
     RescaleIntensityFilter2->SetInput(FloatToDCMFilter->GetOutput());
     */
 
     // Convert from eight-bit to DCM pixel type
     EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
-    EightBitToDCMFilter->SetInput(BinaryDilateFilter->GetOutput());
+    EightBitToDCMFilter->SetInput(BinaryDilateFilterC->GetOutput());
 
+    EightBitToDCMFilterType::Pointer EightBitToDCMFilter2 = EightBitToDCMFilterType::New();
+    EightBitToDCMFilter2->SetInput(BinaryThresholdFilter->GetOutput());
     // Write end result of pipeline
     // Set up FileSeriesWriter
     WriterType::Pointer writer = WriterType::New();
-    writer->SetInput(RescaleIntensityFilter->GetOutput());
+    writer->SetInput(FloatToDCMFilter->GetOutput());
     //
     writer->SetImageIO(dcmIO);
     const char * outputDirectory = argv[2];
@@ -214,7 +245,7 @@ int main(int argc, char* argv[])
     // Write raw output files
     // Set up FileSeriesWriter for masks
     RawWriterType::Pointer RawWriter = RawWriterType::New();
-    RawWriter->SetInput(EightBitToDCMFilter->GetOutput());
+    RawWriter->SetInput(EightBitToDCMFilter2->GetOutput());
     RawWriter->SetImageIO(dcmIO);
     const char * RawOutputDirectory = argv[3];
     itksys::SystemTools::MakeDirectory(RawOutputDirectory);

@@ -7,6 +7,8 @@
 #include "itktypes.h"
 
 int round(float);
+int findThreshold(FloatImageType::Pointer, FloatImageType::Pointer);
+void printHistogram(FloatImageType::Pointer);
 void printCentroids(RelabelFilterType::Pointer);
 //DCMImageType::Pointer makeSRGPyramidImage(DCMImageType::Pointer, int, int);
 
