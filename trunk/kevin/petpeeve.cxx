@@ -63,14 +63,14 @@ int main(int argc, char* argv[])
     BBStructuringElementBin.CreateStructuringElement();
 
     // begin binary dilation filter
-    BBStructuringElementBin.SetRadius(3);
+    BBStructuringElementBin.SetRadius(5);
     DilateFilterType::Pointer BinaryDilateFilter = DilateFilterType::New();
     BinaryDilateFilter->SetKernel(BBStructuringElementBin);
     BinaryDilateFilter->SetDilateValue(255);
     BinaryDilateFilter->SetInput(InvertFilter->GetOutput());
 
     // begin binary erosion filter
-    BBStructuringElementBin.SetRadius(1);
+    BBStructuringElementBin.SetRadius(2);
     ErodeFilterType::Pointer BinaryErodeFilter = ErodeFilterType::New();
     BinaryErodeFilter->SetKernel(BBStructuringElementBin);
     BinaryErodeFilter->SetErodeValue(255);
@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilterType::Pointer BinaryThresholdFilterC = BinaryThresholdFilterType::New();
     BinaryThresholdFilterC->SetInsideValue(255);
     BinaryThresholdFilterC->SetOutsideValue(0);
-    BinaryThresholdFilterC->SetLowerThreshold(15); // controls acceptance threshold for output from concave filter
+    BinaryThresholdFilterC->SetLowerThreshold(20); // controls acceptance threshold for output from concave filter
     BinaryThresholdFilterC->SetUpperThreshold(100);
     BinaryThresholdFilterC->SetInput(FloatRescaleFilter->GetOutput());
 
@@ -147,15 +147,30 @@ int main(int argc, char* argv[])
     BinaryDilateFilterC->SetDilateValue(255);
     BinaryDilateFilterC->SetInput(BinaryThresholdFilterC->GetOutput());
 
+    CCFilterType::Pointer CCFilter1 = CCFilterType::New();
+    CCFilter1->SetInput(BinaryDilateFilterC->GetOutput());
+
+    RelabelFilterType::Pointer RelabelFilter1 = RelabelFilterType::New();
+    RelabelFilter1->SetNumberOfThreads(num_threads);
+    RelabelFilter1->SetInput(CCFilter1->GetOutput());
+    RelabelFilter1->SetMinimumObjectSize(20);
+
+    MaskBTFilterType::Pointer BTFilter1 = MaskBTFilterType::New();
+    BTFilter1->SetOutsideValue(0);
+    BTFilter1->SetInsideValue(255);
+    BTFilter1->SetLowerThreshold(5);
+    BTFilter1->SetUpperThreshold(35);
+    BTFilter1->SetInput(RelabelFilter1->GetOutput());
+
     MaskFilterType::Pointer MaskFilterC = MaskFilterType::New();
     MaskFilterC->SetInput1(LoGFilter->GetOutput());
-    MaskFilterC->SetInput2(BinaryDilateFilterC->GetOutput());
+    MaskFilterC->SetInput2(BTFilter1->GetOutput());
 
     // Apply thresholding and convert to binary
     EightBitToFloatFilterType::Pointer EightBitToFloatFilter = EightBitToFloatFilterType::New();
-    EightBitToFloatFilter->SetInput(BinaryDilateFilterC->GetOutput());
+    EightBitToFloatFilter->SetInput(BTFilter1->GetOutput());
     EightBitToFloatFilter->Update();
-    int thres = 0.5 * findThreshold(EightBitToFloatFilter->GetOutput(), LoGFilter->GetOutput());
+    float thres = 0.65 * findThreshold(EightBitToFloatFilter->GetOutput(), LoGFilter->GetOutput());
     std::cerr << "Determined threshold: " << thres << std::endl;
 
     BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
