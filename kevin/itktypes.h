@@ -28,6 +28,7 @@
 #include "itkConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 #include "itkImageRegionConstIteratorWithIndex.h"
+#include "itkImageRegionIteratorWithIndex.h"
 #include "itkResampleImageFilter.h"
 #include "itkAffineTransform.h"
 #include "itkNearestNeighborInterpolateImageFunction.h"
@@ -38,6 +39,7 @@
 #include "itkMinimumMaximumImageCalculator.h"
 #include "itkScalarImageToHistogramGenerator.h"
 #include "itkHessianRecursiveGaussianImageFilter.h"
+#include "itkExtractImageFilter.h"
 
 #include <algorithm>
 #include <vector>
@@ -50,8 +52,10 @@ typedef float FloatPixelType;
 
 typedef itk::OrientedImage<DCMPixelType, 3> DCMImageType;
 typedef itk::OrientedImage<EightBitPixelType, 3> EightBitImageType;
+typedef itk::OrientedImage<EightBitPixelType, 2> EightBit2DImageType;
 typedef itk::OrientedImage<LongPixelType, 3> LongImageType;
 typedef itk::OrientedImage<FloatPixelType, 3> FloatImageType;
+typedef itk::OrientedImage<FloatPixelType, 2> Float2DImageType;
 
 typedef itk::ImageSeriesReader<DCMImageType> ReaderType;
 typedef itk::GDCMImageIO ImageIOType;
@@ -86,7 +90,9 @@ typedef itk::ThresholdImageFilter<FloatImageType> ThresholdFilterType;
 typedef itk::ThresholdImageFilter<DCMImageType> DCMThresholdFilterType;
 typedef itk::BinaryThresholdImageFilter<DCMImageType, EightBitImageType> MaskBTFilterType;
 typedef itk::BinaryThresholdImageFilter<FloatImageType, EightBitImageType> BinaryThresholdFilterType;
+typedef itk::BinaryThresholdImageFilter<Float2DImageType, EightBit2DImageType> BinaryThreshold2DFilterType;
 typedef itk::BinaryThresholdImageFilter<EightBitImageType, EightBitImageType> EightBitBinaryThresholdFilterType;
+typedef itk::ExtractImageFilter<FloatImageType, Float2DImageType> ExtractFilterType;
 typedef itk::ConnectedComponentImageFilter<EightBitImageType, DCMImageType, EightBitImageType> CCFilterType;
 typedef itk::RelabelComponentImageFilter<DCMImageType, DCMImageType> RelabelFilterType;
 

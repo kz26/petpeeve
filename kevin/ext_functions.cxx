@@ -4,6 +4,7 @@
  * July 8, 2011
  */
 #include "itktypes.h"
+#include "ext_functions.h"
 
 using namespace std;
 
@@ -28,27 +29,97 @@ float findMax(FloatImageType::Pointer inputimg) // finds the maximum pixel value
     return MinMaxFilter->GetMaximum();
 }
 
-int findThreshold(FloatImageType::Pointer maximaimg, FloatImageType::Pointer inputimg) // input image is output from HConcaveImageFilter
+// thresholds a 3D input image slice by slice (with different thresholds for each slice)
+// outputs a 3D input image
+EightBitImageType::Pointer SliceBySliceThreshold(FloatImageType::Pointer inputimg)
+{
+    // Create output image, using same parameters as input image
+    EightBitImageType::Pointer outputimg = EightBitImageType::New();
+    EightBitImageType::RegionType outputregion;
+    outputregion.SetIndex(inputimg->GetRequestedRegion().GetIndex());
+    outputregion.SetSize(inputimg->GetRequestedRegion().GetSize());
+    outputimg->SetRegions(outputregion);
+    outputimg->Allocate();
+
+    // Get number of slices
+    FloatImageType::SizeType size = inputimg->GetRequestedRegion().GetSize();
+    int numslices = size[2];
+    size[2] = 0; // Extract filter will collapse in z dimension
+
+    typedef itk::ImageRegionConstIteratorWithIndex<EightBit2DImageType> ImageRegion2DIteratorType;
+    typedef itk::ImageRegionIteratorWithIndex<EightBitImageType> ImageRegionIteratorType;
+    for(int i = 0; i < numslices; i++)
+    {
+        ExtractFilterType::Pointer ExtractFilter = ExtractFilterType::New();
+        FloatImageType::RegionType::IndexType index = inputimg->GetRequestedRegion().GetIndex();
+        index[2] = i;
+        FloatImageType::RegionType ExtractionRegion;
+        ExtractionRegion.SetSize(size);
+        ExtractionRegion.SetIndex(index);
+
+        ExtractFilter->SetInput(inputimg);
+        ExtractFilter->SetExtractionRegion(ExtractionRegion);
+        ExtractFilter->Update();
+        
+        int slicethres = 1.65 * findThreshold(ExtractFilter->GetOutput());
+        BinaryThreshold2DFilterType::Pointer BTFilter = BinaryThreshold2DFilterType::New();
+        BTFilter->SetInsideValue(255);
+        BTFilter->SetOutsideValue(0);
+        BTFilter->SetLowerThreshold(-65536);
+        BTFilter->SetUpperThreshold(max(slicethres, -65535));
+        BTFilter->SetInput(ExtractFilter->GetOutput());
+        std::cerr << "Threshold for image " << i << ": " << slicethres << std::endl;
+        BTFilter->Update();
+
+        Float2DImageType::RegionType::IndexType slice_index;
+        slice_index[0] = 0;
+        slice_index[1] = 0;
+
+        Float2DImageType::SizeType slice_size = BTFilter->GetOutput()->GetRequestedRegion().GetSize();
+        Float2DImageType::RegionType slice_region;
+        slice_region.SetIndex(slice_index);
+        slice_region.SetSize(slice_size);
+
+        EightBitImageType::RegionType::IndexType output_slice_index;
+        output_slice_index[0] = 0;
+        output_slice_index[1] = 0;
+        output_slice_index[2] = i;
+
+        EightBitImageType::SizeType output_slice_size = inputimg->GetRequestedRegion().GetSize();
+        output_slice_size[2] = 0;
+
+        EightBitImageType::RegionType output_region;
+        output_region.SetIndex(output_slice_index);
+        output_region.SetSize(output_slice_size);
+
+        ImageRegion2DIteratorType input_iterator(BTFilter->GetOutput(), slice_region);
+        ImageRegionIteratorType output_iterator(outputimg, output_region);
+
+        for(input_iterator.GoToBegin(), output_iterator.GoToBegin(); !input_iterator.IsAtEnd(); ++input_iterator, ++output_iterator) 
+        {
+            output_iterator.Set(input_iterator.Get());
+        }
+    }
+    return outputimg;
+}
+
+int findThreshold(Float2DImageType::Pointer inputimg) // find threshold for a 2D slice
 {
     std::vector<float> pixvals;
 
-    std::cerr << "Concave filter pixel max: " << findMax(maximaimg) << std::endl;
-    //float pixmax = findMax(maximaimg);
-    FloatImageType::RegionType InputRegion;
-    FloatImageType::RegionType::IndexType InputStart;
+    Float2DImageType::RegionType InputRegion;
+    Float2DImageType::RegionType::IndexType InputStart;
     InputStart[0] = 0;
     InputStart[1] = 0;
-    InputStart[2] = 0;
-    InputRegion.SetSize(maximaimg->GetRequestedRegion().GetSize());
+    InputRegion.SetSize(inputimg->GetRequestedRegion().GetSize());
     InputRegion.SetIndex(InputStart);
 
-    typedef itk::ImageRegionConstIteratorWithIndex<FloatImageType> ConstIteratorWithIndexType;
-    ConstIteratorWithIndexType MaximaIterator(maximaimg, InputRegion);
+    typedef itk::ImageRegionConstIteratorWithIndex<Float2DImageType> ConstIteratorWithIndexType;
     ConstIteratorWithIndexType InputIterator(inputimg, InputRegion);
 
-    for(MaximaIterator.GoToBegin(), InputIterator.GoToBegin(); !MaximaIterator.IsAtEnd(); ++MaximaIterator, ++InputIterator)
+    for(InputIterator.GoToBegin(); !InputIterator.IsAtEnd(); ++InputIterator)
     {
-        if(MaximaIterator.Get() > 0)
+        if(InputIterator.Get() != 0)
             pixvals.push_back(InputIterator.Get());
     }
     return round(mean(pixvals));
