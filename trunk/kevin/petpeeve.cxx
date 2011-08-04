@@ -147,52 +147,18 @@ int main(int argc, char* argv[])
     BinaryDilateFilterC->SetDilateValue(255);
     BinaryDilateFilterC->SetInput(BinaryThresholdFilterC->GetOutput());
 
-    CCFilterType::Pointer CCFilter1 = CCFilterType::New();
-    CCFilter1->SetInput(BinaryDilateFilterC->GetOutput());
-
-    RelabelFilterType::Pointer RelabelFilter1 = RelabelFilterType::New();
-    RelabelFilter1->SetNumberOfThreads(num_threads);
-    RelabelFilter1->SetInput(CCFilter1->GetOutput());
-    RelabelFilter1->SetMinimumObjectSize(20);
-
-    MaskBTFilterType::Pointer BTFilter1 = MaskBTFilterType::New();
-    BTFilter1->SetOutsideValue(0);
-    BTFilter1->SetInsideValue(255);
-    BTFilter1->SetLowerThreshold(5);
-    BTFilter1->SetUpperThreshold(35);
-    BTFilter1->SetInput(RelabelFilter1->GetOutput());
-
     MaskFilterType::Pointer MaskFilterC = MaskFilterType::New();
     MaskFilterC->SetInput1(LoGFilter->GetOutput());
-    MaskFilterC->SetInput2(BTFilter1->GetOutput());
+    MaskFilterC->SetInput2(BinaryDilateFilterC->GetOutput());
+    MaskFilterC->Update();
 
-    // Apply thresholding and convert to binary
-    EightBitToFloatFilterType::Pointer EightBitToFloatFilter = EightBitToFloatFilterType::New();
-    EightBitToFloatFilter->SetInput(BTFilter1->GetOutput());
-    EightBitToFloatFilter->Update();
-    float thres = 0.65 * findThreshold(EightBitToFloatFilter->GetOutput(), LoGFilter->GetOutput());
-    std::cerr << "Determined threshold: " << thres << std::endl;
-
-    BinaryThresholdFilterType::Pointer BinaryThresholdFilter = BinaryThresholdFilterType::New();
-    BinaryThresholdFilter->SetInsideValue(255);
-    BinaryThresholdFilter->SetOutsideValue(0);
-    BinaryThresholdFilter->SetLowerThreshold(-65536);
-    BinaryThresholdFilter->SetUpperThreshold(thres);
-    BinaryThresholdFilter->SetInput(MaskFilterC->GetOutput());
-
-/*
-    // Secondary binary dilation step
-    BBStructuringElementBin.SetRadius(1);
-    DilateFilterType::Pointer BinaryDilateFilter2 = DilateFilterType::New();
-    BinaryDilateFilter2->SetKernel(BBStructuringElementBin);
-    BinaryDilateFilter2->SetDilateValue(255);
-    BinaryDilateFilter2->SetInput(BinaryThresholdFilter->GetOutput());
-    */
+    // TODO: slice by slice thresholding method goes here 
+    EightBitImageType::Pointer thresholded_img = SliceBySliceThreshold(MaskFilterC->GetOutput());
 
     CCFilterType::Pointer CCFilter = CCFilterType::New();
     CCFilter->SetNumberOfThreads(num_threads);
-    CCFilter->SetInput(BinaryThresholdFilter->GetOutput());
-    CCFilter->SetMaskImage(BinaryThresholdFilter->GetOutput());
+    CCFilter->SetInput(thresholded_img);
+    CCFilter->SetMaskImage(thresholded_img);
     //CCFilter->FullyConnectedOn();
     
     unsigned int min_object_size = 20;
@@ -222,7 +188,7 @@ int main(int argc, char* argv[])
 
     // Convert back to DCM pixel type
     FloatToDCMFilterType::Pointer FloatToDCMFilter = FloatToDCMFilterType::New();
-    FloatToDCMFilter->SetInput(LoGFilter->GetOutput());
+    FloatToDCMFilter->SetInput(MaskFilterC->GetOutput());
 
     //FloatToDCMFilterType::Pointer FloatToDCMFilter2 = FloatToDCMFilterType::New();
     //FloatToDCMFilter2->SetInput(RescaleIntensityFilter->GetOutput());
@@ -232,7 +198,7 @@ int main(int argc, char* argv[])
     EightBitToDCMFilter->SetInput(BinaryDilateFilterC->GetOutput());
 
     EightBitToDCMFilterType::Pointer EightBitToDCMFilter2 = EightBitToDCMFilterType::New();
-    EightBitToDCMFilter2->SetInput(BinaryThresholdFilter->GetOutput());
+    EightBitToDCMFilter2->SetInput(thresholded_img);
       
     // Write end result of pipeline
     // Set up FileSeriesWriter
