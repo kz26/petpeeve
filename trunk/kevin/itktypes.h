@@ -71,7 +71,6 @@ typedef itk::CastImageFilter<FloatImageType, EightBitImageType> FloatToEightBitF
 typedef itk::CastImageFilter<EightBitImageType, FloatImageType> EightBitToFloatFilterType;
 
 typedef itk::OtsuThresholdImageFilter<FloatImageType, EightBitImageType> OtsuFilterType;
-typedef itk::OtsuMultipleThresholdsImageFilter<FloatImageType, EightBitImageType> OtsuMultipleFilterType;
 typedef itk::BinaryBallStructuringElement<EightBitPixelType, 3> BBStructuringElementBinType;
 typedef itk::BinaryErodeImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> ErodeFilterType;
 typedef itk::BinaryDilateImageFilter<EightBitImageType, EightBitImageType, BBStructuringElementBinType> DilateFilterType;
@@ -93,6 +92,7 @@ typedef itk::BinaryThresholdImageFilter<FloatImageType, EightBitImageType> Binar
 typedef itk::BinaryThresholdImageFilter<Float2DImageType, EightBit2DImageType> BinaryThreshold2DFilterType;
 typedef itk::BinaryThresholdImageFilter<EightBitImageType, EightBitImageType> EightBitBinaryThresholdFilterType;
 typedef itk::ExtractImageFilter<FloatImageType, Float2DImageType> ExtractFilterType;
+typedef itk::ExtractImageFilter<Float2DImageType, Float2DImageType> Extract2DFilterType;
 typedef itk::ConnectedComponentImageFilter<EightBitImageType, DCMImageType, EightBitImageType> CCFilterType;
 typedef itk::RelabelComponentImageFilter<DCMImageType, DCMImageType> RelabelFilterType;
 

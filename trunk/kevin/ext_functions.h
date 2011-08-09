@@ -7,6 +7,7 @@
 #include "itktypes.h"
 
 int round(float);
+EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer, int);
 EightBitImageType::Pointer SliceBySliceThreshold(FloatImageType::Pointer);
 int findThreshold(Float2DImageType::Pointer);
 void printHistogram(FloatImageType::Pointer);

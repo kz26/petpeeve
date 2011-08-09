@@ -15,18 +15,123 @@ int round(float num)
 
 float mean(std::vector<float> vals)
 {
+    if(vals.size() == 0)
+        return 0;
     float sum = 0;
     for(int i = 0; i < vals.size(); i++)
         sum += vals[i];
     return sum / vals.size();
 }
-float findMax(FloatImageType::Pointer inputimg) // finds the maximum pixel value in an image
+
+float findMax(EightBit2DImageType::Pointer inputimg) // finds the maximum pixel value in an image
 {
-    typedef itk::MinimumMaximumImageCalculator<FloatImageType> MinMaxFilterType;
+    typedef itk::MinimumMaximumImageCalculator<EightBit2DImageType> MinMaxFilterType;
     MinMaxFilterType::Pointer MinMaxFilter = MinMaxFilterType::New();
     MinMaxFilter->SetImage(inputimg);
     MinMaxFilter->ComputeMaximum();
     return MinMaxFilter->GetMaximum();
+}
+
+float findMin(EightBit2DImageType::Pointer inputimg) // finds the maximum pixel value in an image
+{
+    typedef itk::MinimumMaximumImageCalculator<EightBit2DImageType> MinMaxFilterType;
+    MinMaxFilterType::Pointer MinMaxFilter = MinMaxFilterType::New();
+    MinMaxFilter->SetImage(inputimg);
+    MinMaxFilter->ComputeMinimum();
+    return MinMaxFilter->GetMinimum();
+}
+
+// thresholds a 3D input image
+// 3D volume is decomposed into slices
+// each slice is divided into a square grid, and mean-based thresholding is performed on each grid square
+// each slice will be divided into num*num squares
+EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer inputimg, int num)
+{
+    EightBitImageType::Pointer outputimg = EightBitImageType::New();
+    EightBitImageType::RegionType outputregion;
+    outputregion.SetIndex(inputimg->GetLargestPossibleRegion().GetIndex());
+    outputregion.SetSize(inputimg->GetLargestPossibleRegion().GetSize());
+    outputimg->SetRegions(outputregion);
+    outputimg->Allocate();
+
+    FloatImageType::SizeType size = inputimg->GetLargestPossibleRegion().GetSize();
+    //assert(size[0] == size[1] && static_cast<float>(size[0]) % num == 0);
+    int numslices = size[2];
+    int sidelength = size[0] / num;
+    size[2] = 0; // tell ExtractImageFilter to collapse in z-direction
+    FloatImageType::RegionType::SizeType gsquare_size;
+    gsquare_size.Fill(sidelength);
+    gsquare_size[2] = 0;
+    typedef itk::ImageRegionIteratorWithIndex<EightBit2DImageType> ImageRegion2DIteratorType;
+    typedef itk::ImageRegionIteratorWithIndex<EightBitImageType> ImageRegionIteratorType;
+
+    ExtractFilterType::Pointer ExtractSquareFilter = ExtractFilterType::New();
+    for(unsigned int i = 0; i < numslices; i++)
+    {
+        // extract grid square
+        for(unsigned int sr = 0; sr < num; sr++)
+        {
+            for(unsigned int sc = 0; sc < num; sc++)
+            {
+                FloatImageType::RegionType gsquare_region;
+                FloatImageType::RegionType::IndexType gsquare_index;
+                gsquare_index[0] = sc * sidelength;
+                gsquare_index[1] = sr * sidelength;
+                gsquare_index[2] = i; // set slice
+                gsquare_region.SetSize(gsquare_size);
+                gsquare_region.SetIndex(gsquare_index);
+                ExtractSquareFilter->SetInput(inputimg);
+                ExtractSquareFilter->SetExtractionRegion(gsquare_region);
+                ExtractSquareFilter->UpdateLargestPossibleRegion();
+                Float2DImageType::Pointer square = ExtractSquareFilter->GetOutput();
+                square->DisconnectPipeline();
+                std::cerr << "Grid square extracted successfully" << std::endl;
+                
+                // apply thresholding
+                int thres = findThreshold(square);
+                if(thres >= 0)
+                    continue;
+                std::cerr << thres << std::endl;
+                BinaryThreshold2DFilterType::Pointer BTFilter = BinaryThreshold2DFilterType::New();
+                BTFilter->SetInsideValue(255);
+                BTFilter->SetOutsideValue(0);
+                BTFilter->SetLowerThreshold(-65536);
+                BTFilter->SetUpperThreshold(thres);
+                BTFilter->SetInput(square);
+                BTFilter->Update();
+                EightBit2DImageType::Pointer thresholded_grid = BTFilter->GetOutput();
+
+                // set up iterators to write back to output 3D volume
+                EightBitImageType::RegionType grid_output_region;
+                EightBitImageType::RegionType::SizeType grid_output_size;
+                grid_output_size[0] = sidelength;
+                grid_output_size[1] = sidelength;
+                grid_output_size[2] = 0;
+                EightBitImageType::RegionType::IndexType grid_output_index;
+                grid_output_index[0] = sc * sidelength;
+                grid_output_index[1] = sr * sidelength;
+                grid_output_index[2] = i;
+                grid_output_region.SetIndex(grid_output_index);
+                grid_output_region.SetSize(grid_output_size);
+
+                /*
+                EightBit2DImageType::RegionType square_region;
+                //EightBit2DImageType::RegionType::IndexType square_index;
+                //square_index.Fill(0);
+                square_region.SetIndex(square_index);
+                square_region.SetSize(thresholded_grid->GetLargestPossibleRegion().GetSize());
+                */
+
+                ImageRegionIteratorType output_iterator(outputimg, grid_output_region);
+                ImageRegion2DIteratorType input_iterator(thresholded_grid, thresholded_grid->GetLargestPossibleRegion());
+                
+                for(input_iterator.GoToBegin(), output_iterator.GoToBegin(); !input_iterator.IsAtEnd(); ++input_iterator, ++output_iterator) 
+                    output_iterator.Set(input_iterator.Get());
+                std::cerr << "Grid square written successfully." << std::endl; 
+            }
+        }
+    }
+    return outputimg;
 }
 
 // thresholds a 3D input image slice by slice (with different thresholds for each slice)
@@ -61,12 +166,12 @@ EightBitImageType::Pointer SliceBySliceThreshold(FloatImageType::Pointer inputim
         ExtractFilter->SetExtractionRegion(ExtractionRegion);
         ExtractFilter->Update();
         
-        int slicethres = 1.65 * findThreshold(ExtractFilter->GetOutput());
+        int slicethres = findThreshold(ExtractFilter->GetOutput());
         BinaryThreshold2DFilterType::Pointer BTFilter = BinaryThreshold2DFilterType::New();
         BTFilter->SetInsideValue(255);
         BTFilter->SetOutsideValue(0);
         BTFilter->SetLowerThreshold(-65536);
-        BTFilter->SetUpperThreshold(max(slicethres, -65535));
+        BTFilter->SetUpperThreshold(slicethres);
         BTFilter->SetInput(ExtractFilter->GetOutput());
         std::cerr << "Threshold for image " << i << ": " << slicethres << std::endl;
         BTFilter->Update();
@@ -111,8 +216,8 @@ int findThreshold(Float2DImageType::Pointer inputimg) // find threshold for a 2D
     Float2DImageType::RegionType::IndexType InputStart;
     InputStart[0] = 0;
     InputStart[1] = 0;
-    InputRegion.SetSize(inputimg->GetRequestedRegion().GetSize());
-    InputRegion.SetIndex(InputStart);
+    InputRegion.SetSize(inputimg->GetLargestPossibleRegion().GetSize());
+    InputRegion.SetIndex(inputimg->GetLargestPossibleRegion().GetIndex());
 
     typedef itk::ImageRegionConstIteratorWithIndex<Float2DImageType> ConstIteratorWithIndexType;
     ConstIteratorWithIndexType InputIterator(inputimg, InputRegion);
@@ -122,7 +227,11 @@ int findThreshold(Float2DImageType::Pointer inputimg) // find threshold for a 2D
         if(InputIterator.Get() != 0)
             pixvals.push_back(InputIterator.Get());
     }
-    return round(mean(pixvals));
+    int thres = round(mean(pixvals));
+    if(thres == 0)
+        return -1;
+    else
+        return thres;
 }
 
 // imported from 2009_11_06_CandidateFinder_adaptive_best
