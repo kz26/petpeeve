@@ -51,6 +51,7 @@ typedef signed short LongPixelType;
 typedef float FloatPixelType;
 
 typedef itk::OrientedImage<DCMPixelType, 3> DCMImageType;
+typedef itk::OrientedImage<DCMPixelType, 2> DCM2DImageType;
 typedef itk::OrientedImage<EightBitPixelType, 3> EightBitImageType;
 typedef itk::OrientedImage<EightBitPixelType, 2> EightBit2DImageType;
 typedef itk::OrientedImage<LongPixelType, 3> LongImageType;
@@ -88,13 +89,16 @@ typedef itk::ThresholdImageFilter<EightBitImageType> EightBitThresholdFilterType
 typedef itk::ThresholdImageFilter<FloatImageType> ThresholdFilterType;
 typedef itk::ThresholdImageFilter<DCMImageType> DCMThresholdFilterType;
 typedef itk::BinaryThresholdImageFilter<DCMImageType, EightBitImageType> MaskBTFilterType;
+typedef itk::BinaryThresholdImageFilter<DCM2DImageType, EightBit2DImageType> BT2DFilterType;
 typedef itk::BinaryThresholdImageFilter<FloatImageType, EightBitImageType> BinaryThresholdFilterType;
 typedef itk::BinaryThresholdImageFilter<Float2DImageType, EightBit2DImageType> BinaryThreshold2DFilterType;
 typedef itk::BinaryThresholdImageFilter<EightBitImageType, EightBitImageType> EightBitBinaryThresholdFilterType;
 typedef itk::ExtractImageFilter<FloatImageType, Float2DImageType> ExtractFilterType;
 typedef itk::ExtractImageFilter<Float2DImageType, Float2DImageType> Extract2DFilterType;
 typedef itk::ConnectedComponentImageFilter<EightBitImageType, DCMImageType, EightBitImageType> CCFilterType;
+typedef itk::ConnectedComponentImageFilter<EightBit2DImageType, DCM2DImageType, EightBit2DImageType> CC2DFilterType;
 typedef itk::RelabelComponentImageFilter<DCMImageType, DCMImageType> RelabelFilterType;
+typedef itk::RelabelComponentImageFilter<DCM2DImageType, DCM2DImageType> Relabel2DFilterType;
 
 // File series writer types
 typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;

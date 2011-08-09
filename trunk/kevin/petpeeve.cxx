@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
     MaskFilterC->Update();
 
     // thresholding method goes here 
-    EightBitImageType::Pointer thresholded_img = GridThreshold(MaskFilterC->GetOutput(), 4);
+    EightBitImageType::Pointer thresholded_img = GridThreshold(MaskFilterC->GetOutput(), 8);
 
     CCFilterType::Pointer CCFilter = CCFilterType::New();
     CCFilter->SetNumberOfThreads(num_threads);
