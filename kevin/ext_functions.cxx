@@ -65,14 +65,15 @@ EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer inputimg, int n
     typedef itk::ImageRegionIteratorWithIndex<EightBit2DImageType> ImageRegion2DIteratorType;
     typedef itk::ImageRegionIteratorWithIndex<EightBitImageType> ImageRegionIteratorType;
 
-    ExtractFilterType::Pointer ExtractSquareFilter = ExtractFilterType::New();
     for(unsigned int i = 0; i < numslices; i++)
     {
+        std::cerr << "Slice " << i << std::endl;
         // extract grid square
         for(unsigned int sr = 0; sr < num; sr++)
         {
             for(unsigned int sc = 0; sc < num; sc++)
             {
+                ExtractFilterType::Pointer ExtractSquareFilter = ExtractFilterType::New();
                 FloatImageType::RegionType gsquare_region;
                 FloatImageType::RegionType::IndexType gsquare_index;
                 gsquare_index[0] = sc * sidelength;
@@ -84,22 +85,35 @@ EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer inputimg, int n
                 ExtractSquareFilter->SetExtractionRegion(gsquare_region);
                 ExtractSquareFilter->UpdateLargestPossibleRegion();
                 Float2DImageType::Pointer square = ExtractSquareFilter->GetOutput();
-                square->DisconnectPipeline();
-                std::cerr << "Grid square extracted successfully" << std::endl;
+                //std::cerr << "Grid square extracted successfully" << std::endl;
                 
                 // apply thresholding
                 int thres = findThreshold(square);
                 if(thres >= 0)
                     continue;
-                std::cerr << thres << std::endl;
+                //std::cerr << thres << std::endl;
                 BinaryThreshold2DFilterType::Pointer BTFilter = BinaryThreshold2DFilterType::New();
                 BTFilter->SetInsideValue(255);
                 BTFilter->SetOutsideValue(0);
                 BTFilter->SetLowerThreshold(-65536);
                 BTFilter->SetUpperThreshold(thres);
                 BTFilter->SetInput(square);
-                BTFilter->Update();
                 EightBit2DImageType::Pointer thresholded_grid = BTFilter->GetOutput();
+
+                CC2DFilterType::Pointer CCFilter = CC2DFilterType::New();
+                CCFilter->SetInput(BTFilter->GetOutput());
+                Relabel2DFilterType::Pointer RelabelFilter = Relabel2DFilterType::New();
+                RelabelFilter->SetInput(CCFilter->GetOutput());
+
+                BT2DFilterType::Pointer BTFilter2 = BT2DFilterType::New();
+                BTFilter2->SetInput(RelabelFilter->GetOutput());
+                BTFilter2->SetInsideValue(255);
+                BTFilter2->SetOutsideValue(0);
+                BTFilter2->SetLowerThreshold(1);
+                BTFilter2->SetUpperThreshold(1);
+                BTFilter2->Update();
+
+                EightBit2DImageType::Pointer final_img = BTFilter2->GetOutput();
 
                 // set up iterators to write back to output 3D volume
                 EightBitImageType::RegionType grid_output_region;
@@ -123,11 +137,11 @@ EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer inputimg, int n
                 */
 
                 ImageRegionIteratorType output_iterator(outputimg, grid_output_region);
-                ImageRegion2DIteratorType input_iterator(thresholded_grid, thresholded_grid->GetLargestPossibleRegion());
+                ImageRegion2DIteratorType input_iterator(final_img, final_img->GetLargestPossibleRegion());
                 
                 for(input_iterator.GoToBegin(), output_iterator.GoToBegin(); !input_iterator.IsAtEnd(); ++input_iterator, ++output_iterator) 
                     output_iterator.Set(input_iterator.Get());
-                std::cerr << "Grid square written successfully." << std::endl; 
+                std::cerr << "    (" << sc << ", " << sr << ") threshold = " << thres << std::endl;
             }
         }
     }
