@@ -152,8 +152,8 @@ int main(int argc, char* argv[])
     MaskFilterC->SetInput2(BinaryDilateFilterC->GetOutput());
     MaskFilterC->Update();
 
-    // TODO: slice by slice thresholding method goes here 
-    EightBitImageType::Pointer thresholded_img = SliceBySliceThreshold(MaskFilterC->GetOutput());
+    // thresholding method goes here 
+    EightBitImageType::Pointer thresholded_img = GridThreshold(MaskFilterC->GetOutput(), 4);
 
     CCFilterType::Pointer CCFilter = CCFilterType::New();
     CCFilter->SetNumberOfThreads(num_threads);
@@ -197,9 +197,6 @@ int main(int argc, char* argv[])
     EightBitToDCMFilterType::Pointer EightBitToDCMFilter = EightBitToDCMFilterType::New();
     EightBitToDCMFilter->SetInput(BinaryDilateFilterC->GetOutput());
 
-    EightBitToDCMFilterType::Pointer EightBitToDCMFilter2 = EightBitToDCMFilterType::New();
-    EightBitToDCMFilter2->SetInput(thresholded_img);
-      
     // Write end result of pipeline
     // Set up FileSeriesWriter
     WriterType::Pointer writer = WriterType::New();
