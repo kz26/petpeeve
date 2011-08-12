@@ -67,7 +67,7 @@ EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer inputimg, int n
 
     for(unsigned int i = 0; i < numslices; i++)
     {
-        std::cerr << "Slice " << i << std::endl;
+        //std::cerr << "Slice " << i << std::endl;
         // extract grid square
         for(unsigned int sr = 0; sr < num; sr++)
         {
@@ -104,6 +104,7 @@ EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer inputimg, int n
                 CCFilter->SetInput(BTFilter->GetOutput());
                 Relabel2DFilterType::Pointer RelabelFilter = Relabel2DFilterType::New();
                 RelabelFilter->SetInput(CCFilter->GetOutput());
+                RelabelFilter->SetMinimumObjectSize(2);
 
                 BT2DFilterType::Pointer BTFilter2 = BT2DFilterType::New();
                 BTFilter2->SetInput(RelabelFilter->GetOutput());
@@ -141,7 +142,7 @@ EightBitImageType::Pointer GridThreshold(FloatImageType::Pointer inputimg, int n
                 
                 for(input_iterator.GoToBegin(), output_iterator.GoToBegin(); !input_iterator.IsAtEnd(); ++input_iterator, ++output_iterator) 
                     output_iterator.Set(input_iterator.Get());
-                std::cerr << "    (" << sc << ", " << sr << ") threshold = " << thres << std::endl;
+                //std::cerr << "    (" << sc << ", " << sr << ") threshold = " << thres << std::endl;
             }
         }
     }
@@ -187,7 +188,7 @@ EightBitImageType::Pointer SliceBySliceThreshold(FloatImageType::Pointer inputim
         BTFilter->SetLowerThreshold(-65536);
         BTFilter->SetUpperThreshold(slicethres);
         BTFilter->SetInput(ExtractFilter->GetOutput());
-        std::cerr << "Threshold for image " << i << ": " << slicethres << std::endl;
+        //std::cerr << "Threshold for image " << i << ": " << slicethres << std::endl;
         BTFilter->Update();
 
         Float2DImageType::RegionType::IndexType slice_index;
