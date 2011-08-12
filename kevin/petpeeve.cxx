@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
     BinaryThresholdFilterType::Pointer BinaryThresholdFilterC = BinaryThresholdFilterType::New();
     BinaryThresholdFilterC->SetInsideValue(255);
     BinaryThresholdFilterC->SetOutsideValue(0);
-    BinaryThresholdFilterC->SetLowerThreshold(20); // controls acceptance threshold for output from concave filter
+    BinaryThresholdFilterC->SetLowerThreshold(15); // controls acceptance threshold for output from concave filter
     BinaryThresholdFilterC->SetUpperThreshold(100);
     BinaryThresholdFilterC->SetInput(FloatRescaleFilter->GetOutput());
 
