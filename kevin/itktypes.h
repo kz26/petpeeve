@@ -40,6 +40,10 @@
 #include "itkScalarImageToHistogramGenerator.h"
 #include "itkHessianRecursiveGaussianImageFilter.h"
 #include "itkExtractImageFilter.h"
+#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkLabelImageToShapeLabelMapFilter.h"
+//#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkShapeLabelMapFilter.h"
+//#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkShapeLabelObject.h"
+//#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkShapeOpeningLabelMapFilter.h"
 
 #include <algorithm>
 #include <vector>
@@ -99,6 +103,11 @@ typedef itk::ConnectedComponentImageFilter<EightBitImageType, DCMImageType, Eigh
 typedef itk::ConnectedComponentImageFilter<EightBit2DImageType, DCM2DImageType, EightBit2DImageType> CC2DFilterType;
 typedef itk::RelabelComponentImageFilter<DCMImageType, DCMImageType> RelabelFilterType;
 typedef itk::RelabelComponentImageFilter<DCM2DImageType, DCM2DImageType> Relabel2DFilterType;
+
+/*
+typedef itk::LabelImageToShapeLabelMapFilter<DCMImageType, DCMImageType> LabelToShapeMapType;
+typedef itk::ShapeOpeningLabelMapFilter<DCMImageType> ShapeOpeningLabelMapType;
+*/
 
 // File series writer types
 typedef itk::OrientedImage<DCMPixelType, 2> OutputImageType;
