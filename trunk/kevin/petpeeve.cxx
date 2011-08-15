@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
     MaskFilterC->Update();
 
     // thresholding method goes here 
-    EightBitImageType::Pointer thresholded_img = GridThreshold(MaskFilterC->GetOutput(), 8);
+    EightBitImageType::Pointer thresholded_img = GridThreshold(MaskFilterC->GetOutput(), 4);
 
     CCFilterType::Pointer CCFilter = CCFilterType::New();
     CCFilter->SetNumberOfThreads(num_threads);
@@ -167,6 +167,18 @@ int main(int argc, char* argv[])
     RelabelFilter->SetInput(CCFilter->GetOutput());
     RelabelFilter->SetNumberOfThreads(num_threads);
     RelabelFilter->SetMinimumObjectSize(min_object_size);
+
+    /*
+    LabelToShapeMapType::Pointer LabelToShapeMapFilter = LabelToShapeMapType::New();
+    LabelToShapeMapFilter->SetInput(RelabelFilter->GetOutput());
+    
+    for(unsigned int i = 0; i < LabelToShapeMapFilter->GetOutput()->GetNumberOfLabelObjects(); ++i)
+    {
+        LabelToShapeMapFilter::OutputImageType::LabelObjectType* labelobj = LabelToShapeMapFilter->GetOutput()->GetNthLabelObject(i);
+        labelobj::RegionType region = labelobj->GetRegion();
+        std::cerr << "Region: " << region << std::endl;
+    }
+    */
 
     RelabelFilter->Update();
     printCentroids(RelabelFilter);
