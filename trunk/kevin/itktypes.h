@@ -84,7 +84,7 @@ typedef itk::MaskImageFilter<FloatImageType, EightBitImageType, FloatImageType> 
 typedef itk::SmoothingRecursiveGaussianImageFilter<FloatImageType, FloatImageType> RGFilterType;
 typedef itk::LaplacianRecursiveGaussianImageFilter<FloatImageType, FloatImageType> LoGFilterType;
 typedef itk::HessianRecursiveGaussianImageFilter<FloatImageType, FloatImageType> HessianFilterType;
-typedef itk::HConvexImageFilter<DCMImageType, DCMImageType> ConvexFilterType;
+typedef itk::HConvexImageFilter<FloatImageType, FloatImageType> ConvexFilterType;
 typedef itk::HConcaveImageFilter<FloatImageType, FloatImageType> ConcaveFilterType;
 typedef itk::RescaleIntensityImageFilter<DCMImageType, DCMImageType> RescaleIntensityFilterType;
 typedef itk::RescaleIntensityImageFilter<FloatImageType, FloatImageType> FloatRescaleIntensityFilterType;

@@ -11,6 +11,7 @@ class Point:
         self.point = coords
         self.clid = None
         self.visited = False
+        self.clustered = False
     def __repr__(self):
         return " ".join([str(x) for x in self.point])
 
@@ -35,11 +36,11 @@ def getNeighbors(point, pointset, eps):
     
 def expandCluster(p, n, c, eps, minpts):
     #print "in expandCluster"
+    p.clustered = True
     c.append(p)
     for point in n:
-        if point.visited: continue # point already clustered or marked as noise
-        else:
-            point.visited = True
+        if not p.visited:
+            p.visited = True
         nprime = getNeighbors(point, n, eps)
         if len(nprime) >= minpts:
             expandCluster(point, nprime, c, eps, minpts)
