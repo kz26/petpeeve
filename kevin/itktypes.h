@@ -40,7 +40,7 @@
 #include "itkScalarImageToHistogramGenerator.h"
 #include "itkHessianRecursiveGaussianImageFilter.h"
 #include "itkExtractImageFilter.h"
-#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkLabelImageToShapeLabelMapFilter.h"
+//#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkLabelImageToShapeLabelMapFilter.h"
 //#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkShapeLabelMapFilter.h"
 //#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkShapeLabelObject.h"
 //#include "/home/zhangk/InsightToolkit-3.20.0/Code/Review/itkShapeOpeningLabelMapFilter.h"

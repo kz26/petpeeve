@@ -1,16 +1,16 @@
 #!/usr/bin/python
-# Writes SGE shell scripts to run RG-baseline pipeline on compute cluster
+# Writes SGE shell scripts to run LoG pipeline on compute cluster
 # Kevin Zhang
 # 08/16/2011
 
 import os, sys, shutil
 
 if len(sys.argv) != 7:
-    print "Usage: %s PET_data_dir PET_output_dir script_output_dir master_script_output.sh sigma convex_height" % (sys.argv[0])
+    print "Usage: %s PET_data_dir PET_output_dir script_output_dir master_script_output.sh sigma concave_height" % (sys.argv[0])
     sys.exit(-1)
 
 sigma = int(sys.argv[-2])
-convex_height = int(sys.argv[-1])
+concave_height = int(sys.argv[-1])
 
 if not os.path.exists(sys.argv[2]):
     os.mkdir(sys.argv[2])
@@ -47,7 +47,7 @@ for case in sorted(os.listdir(sys.argv[1])): # loop through PET directories
         f.write("#$ -o %s\n" % (os.path.join(outputpath, "run.log")))
         f.write("#$ -cwd\n")
         f.write("%s/utils/delslices.py %s %s 4\n" % (bindir, os.path.join(subcasepath, "PT"), os.path.join(outputpath, "PT_trimmed")))
-        f.write("%s/petpeeve_rg %s %s %s %s %s %s %s > %s\n" % (bindir, os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_raw1"), os.path.join(outputpath, "output_raw2"), str(sigma), str(convex_height), "2", os.path.join(outputpath, "centroids.txt")))
+        f.write("%s/petpeeve_log %s %s %s %s %s %s %s > %s\n" % (bindir, os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "output"), os.path.join(outputpath, "output_raw1"), os.path.join(outputpath, "output_raw2"), str(sigma), str(concave_height), "2", os.path.join(outputpath, "centroids.txt")))
         f.write("%s/utils/seedfix.py --offset %s %s > %s\n" % (bindir, os.path.join(outputpath, "centroids.txt"), os.path.join(outputpath, "PT_trimmed"), os.path.join(outputpath, "centroids-fixed.txt")))
         #f.write("%s/sensitivity.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "centroids-fixed.txt"), os.path.join(outputpath, "sensitivity-region.txt")))
         #f.write("%s/sensitivity2.py %s %s > %s\n" % (bindir, os.path.join(subcasepath, "objdata"), os.path.join(outputpath, "output"), os.path.join(outputpath, "sensitivity-overlap.txt")))
