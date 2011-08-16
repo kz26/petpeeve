@@ -13,7 +13,9 @@ INCLUDE(${ITK_USE_FILE})
 
 ADD_EXECUTABLE(petpeeve petpeeve.cxx ext_functions.cxx)
 ADD_EXECUTABLE(petpeeve_rg petpeeve_rg.cxx ext_functions.cxx)
+ADD_EXECUTABLE(petpeeve_log petpeeve_log.cxx ext_functions.cxx)
 SET(CMAKE_CXX_FLAGS "-g")
 
 TARGET_LINK_LIBRARIES(petpeeve ITKCommon ITKIO ITKAlgorithms)
 TARGET_LINK_LIBRARIES(petpeeve_rg ITKCommon ITKIO ITKAlgorithms)
+TARGET_LINK_LIBRARIES(petpeeve_log ITKCommon ITKIO ITKAlgorithms)

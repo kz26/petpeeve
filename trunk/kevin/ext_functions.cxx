@@ -249,6 +249,30 @@ int findThreshold(Float2DImageType::Pointer inputimg) // find threshold for a 2D
         return thres;
 }
 
+int findThreshold3D(FloatImageType::Pointer maximaimg, FloatImageType::Pointer inputimg) // input image is output from HConcaveImageFilter
+{
+    std::vector<float> pixvals;
+
+    FloatImageType::RegionType InputRegion;
+    FloatImageType::RegionType::IndexType InputStart;
+    InputStart[0] = 0;
+    InputStart[1] = 0;
+    InputStart[2] = 0;
+    InputRegion.SetSize(maximaimg->GetRequestedRegion().GetSize());
+    InputRegion.SetIndex(InputStart);
+
+    typedef itk::ImageRegionConstIteratorWithIndex<FloatImageType> ConstIteratorWithIndexType;
+    ConstIteratorWithIndexType MaximaIterator(maximaimg, InputRegion);
+    ConstIteratorWithIndexType InputIterator(inputimg, InputRegion);
+
+    for(MaximaIterator.GoToBegin(), InputIterator.GoToBegin(); !MaximaIterator.IsAtEnd(); ++MaximaIterator, ++InputIterator)
+    {
+        if(MaximaIterator.Get() > 0)
+            pixvals.push_back(InputIterator.Get());
+    }
+    return round(mean(pixvals));
+}
+
 // imported from 2009_11_06_CandidateFinder_adaptive_best
 void printCentroids(RelabelFilterType::Pointer RelabelFilter)
 {

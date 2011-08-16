@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # Python implementation of DBSCAN
+# Input: list of 3D centroids
 # Kevin Zhang
-# 08/15/2011
+# 08/16/2011
 
 import os, sys, math
 import numpy as np
@@ -34,27 +35,35 @@ def getNeighbors(point, pointset, eps):
             neighbors.append(p)
     return neighbors
     
-def expandCluster(p, n, c, eps, minpts):
+def expandCluster(data, p, n, c, eps, minpts):
     #print "in expandCluster"
     p.clustered = True
     c.append(p)
-    for point in n:
-        if not p.visited:
-            p.visited = True
-        nprime = getNeighbors(point, n, eps)
-        if len(nprime) >= minpts:
-            expandCluster(point, nprime, c, eps, minpts)
+    count = 0
+    while n:
+        if count % 10 == 0:
+            sys.stderr.write("\r%s" % (len(n)))
+        point = n.pop(0)
+        if not point.visited:
+            point.visited = True
+            nprime = getNeighbors(point, data, eps)
+            if len(nprime) >= minpts:
+                n.extend(nprime)
+        if not point.clustered:
+            point.clustered = True
+            c.append(point)
+        count += 1
         
 def dbscan(data, eps, minpts):
     #print "in dbscan"
     clusters = []
     for p in data:
-        if p.visited: continue
-        p.visited = True
-        n = getNeighbors(p, data, eps)
-        if len(n) >= minpts:
-            clusters.append([])
-            expandCluster(p, n, clusters[-1], eps, minpts)
+        if not p.visited:
+            p.visited = True
+            n = getNeighbors(p, data, eps)
+            if len(n) >= minpts:
+                clusters.append([])
+                expandCluster(data, p, n, clusters[-1], eps, minpts)
     return clusters
 
 def getClusterCentroid(pointlist):
@@ -63,22 +72,22 @@ def getClusterCentroid(pointlist):
         totals += p.point
     return list(np.round(totals / len(pointlist)).astype(int))
 
+if __name__ == "__main__":
+    if len(sys.argv) < 4:
+        sys.stderr.write("Usage: %s input_file epsilon min_points [-twice]\n" % (sys.argv[0]))
+        sys.exit(-1)
 
-if len(sys.argv) != 4:
-    sys.stderr.write("Usage: %s input_file epsilon min_points\n" % (sys.argv[0]))
-    sys.exit(-1)
+    clusters = dbscan(readData(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
+    if "-twice" in sys.argv:
+        flatclusters = []
+        for cluster in clusters:
+            for point in cluster:
+                flatclusters.append(Point(point.point)) # reset visited state
 
-clusters = dbscan(readData(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
-#for cluster in clusters:
-#    print " ".join([str(x) for x in getClusterCentroid(cluster)])
+        clusters3 = dbscan(flatclusters, 6, 3)
+        for cluster in clusters3:
+            print " ".join([str(x) for x in getClusterCentroid(cluster)])
 
-# uncomment everything below if doing 2D clustering
-flatclusters = []
-for cluster in clusters:
-    for point in cluster:
-        flatclusters.append(Point(point.point)) # reset visited state
-
-clusters3 = dbscan(flatclusters, 10, 2)
-for cluster in clusters3:
-    #print cluster
-    print " ".join([str(x) for x in getClusterCentroid(cluster)])
+    else:
+        for cluster in clusters:
+            print " ".join([str(x) for x in getClusterCentroid(cluster)])
